@@ -21,7 +21,15 @@ public class DeviceData {
 
     private Double value;
 
-    private LocalDateTime recodeAt;
+    private LocalDateTime recordedAt;
+
+    public void setRecordedAt(LocalDateTime recordedAt) {
+        this.recordedAt = recordedAt;
+    }
+
+    public LocalDateTime getRecordedAt() {
+        return recordedAt;
+    }
 
     @ManyToOne
     @JoinColumn(name = "device_id")

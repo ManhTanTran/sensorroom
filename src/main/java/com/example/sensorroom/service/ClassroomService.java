@@ -1,4 +1,4 @@
-package com.example.sensorroom.service.Interface;
+package com.example.sensorroom.service;
 
 import java.util.List;
 

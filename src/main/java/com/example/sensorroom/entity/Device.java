@@ -24,9 +24,17 @@ public class Device {
 
     private String status;
 
+    public void setClassroom(Classroom classroom) {
+        this.classroom = classroom;
+    }
+
+    public Classroom getClassroom() {
+        return classroom;
+    }
+
     @ManyToOne
     @JoinColumn(name = "classroom_id")
-    private Classroom clasroom;
+    private Classroom classroom;
 
     @OneToMany(mappedBy = "device", cascade = CascadeType.ALL)
     private List<DeviceData> deviceDatas;
