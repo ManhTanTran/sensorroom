@@ -12,7 +12,7 @@ import lombok.*;
 public class DeviceDataRequest {
     @NotBlank
     @Size(max = 50)
-    private String data_type;
+    private String dataType;
 
     @NotBlank
     private double value;

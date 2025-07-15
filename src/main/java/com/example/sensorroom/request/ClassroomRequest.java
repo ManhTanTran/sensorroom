@@ -11,5 +11,5 @@ import lombok.*;
 public class ClassroomRequest {
     @NotBlank
     @Size(min = 2, max = 45)
-    private String varchar;
+    private String name;
 }

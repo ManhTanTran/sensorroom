@@ -17,9 +17,9 @@ public class Alert {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String alert_type; 
+    private String alertType; 
     private String message;
-    private boolean is_resolved;
+    private boolean isResolved;
 
     private LocalDateTime recordedAt;
 
@@ -32,11 +32,11 @@ public class Alert {
     }
 
     public Boolean getIsResolved() {
-        return is_resolved;
+        return isResolved;
     }
 
     public void setIsResolved(Boolean isResolved) {
-        this.is_resolved = isResolved;
+        this.isResolved = isResolved;
     }
 
     @ManyToOne

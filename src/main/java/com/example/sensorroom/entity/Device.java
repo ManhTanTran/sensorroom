@@ -24,14 +24,6 @@ public class Device {
 
     private String status;
 
-    public void setClassroom(Classroom classroom) {
-        this.classroom = classroom;
-    }
-
-    public Classroom getClassroom() {
-        return classroom;
-    }
-
     @ManyToOne
     @JoinColumn(name = "classroom_id")
     private Classroom classroom;

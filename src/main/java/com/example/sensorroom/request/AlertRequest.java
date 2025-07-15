@@ -19,8 +19,8 @@ public class AlertRequest {
 
     @NotBlank
     @Size(max = 45)
-    private String alert_type;
+    private String alertType;
 
-    private Boolean is_resolved;
+    private Boolean isResolved;
     
 }
