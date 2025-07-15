@@ -17,13 +17,13 @@ public class DeviceData {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String dataType;
+    private Double temperature;
+    private Double humidity;
+    private Double co2;
 
-    private Double value;
-
-    private LocalDateTime recordedAt;
+    private LocalDateTime createdAt;
 
     @ManyToOne
-    @JoinColumn(name = "device_id")
-    private Device device;
+    @JoinColumn(name = "classroom_id", nullable = false)
+    private Classroom classroom;
 }

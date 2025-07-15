@@ -3,8 +3,6 @@ package com.example.sensorroom.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.List;
-
 @Entity
 @Table(name = "Classroom")
 @Data
@@ -19,10 +17,8 @@ public class Classroom {
 
     private String name;
 
-    @OneToMany(mappedBy = "classroom", cascade = CascadeType.ALL)
-    private List<Device> devices;
-
-    @OneToMany(mappedBy = "classroom", cascade = CascadeType.ALL)
-    private List<User> users;
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
 }

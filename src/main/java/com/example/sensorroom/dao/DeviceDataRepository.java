@@ -8,5 +8,5 @@ import com.example.sensorroom.entity.DeviceData;
 
 public interface DeviceDataRepository extends JpaRepository <DeviceData, Long>{
     
-    List<DeviceData> findByDeviceId (Long deviceId);
+    List<DeviceData> findByClassroomId (Long classroomId);
 } 

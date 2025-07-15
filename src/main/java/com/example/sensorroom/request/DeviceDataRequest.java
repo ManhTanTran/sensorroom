@@ -15,7 +15,13 @@ public class DeviceDataRequest {
     private String dataType;
 
     @NotBlank
-    private double value;
+    private Double temperature;
+
+    @NotBlank
+    private Double humidity;
+
+    @NotBlank
+    private Double co2;
 
     
 }

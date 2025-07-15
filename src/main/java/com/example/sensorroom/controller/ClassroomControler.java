@@ -35,14 +35,15 @@ public class ClassroomControler {
 
     @GetMapping("/id")
     public ResponseEntity<Classroom> getClassroom(@PathVariable Long id){
-        return ResponseEntity.ok(classroomService.getClasroom(id));
+        return ResponseEntity.ok(classroomService.getClassroom(id));
     }
 
-    @PostMapping
-    public ResponseEntity<Classroom> createClassroom(@Valid @RequestBody ClassroomRequest classroomRequest){
-        Classroom classroom = new Classroom();
-        classroom.setName(classroomRequest.getName());
-        return ResponseEntity.ok(classroomService.createClassroom(classroom));
+    @PostMapping("/user/{userId}")
+    public ResponseEntity<Classroom> createClassroom(
+        @PathVariable Long userId,
+        @RequestBody ClassroomRequest request) {
+        Classroom saved = classroomService.createClassroom(userId, request.getName());
+        return ResponseEntity.ok(saved);
     }
 
     @PutMapping("/{id}")

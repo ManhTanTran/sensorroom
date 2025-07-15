@@ -5,7 +5,9 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.example.sensorroom.dao.ClassroomRepository;
+import com.example.sensorroom.dao.UserRepository;
 import com.example.sensorroom.entity.Classroom;
+import com.example.sensorroom.entity.User;
 import com.example.sensorroom.request.ClassroomRequest;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -18,9 +20,10 @@ import lombok.RequiredArgsConstructor;
 public class ClassroomServiceImpl implements ClassroomService{
 
     private final ClassroomRepository classroomRepository;
+    private final UserRepository userRepository;
 
     @Override 
-    public Classroom getClasroom(Long id){
+    public Classroom getClassroom(Long id){
         return classroomRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Classroom not found"));
     }
@@ -30,8 +33,21 @@ public class ClassroomServiceImpl implements ClassroomService{
         return classroomRepository.findAll();
     }
 
+    @Override
+    public List<Classroom> getClassroomsByUser(Long userId) {
+        return classroomRepository.findAll()
+                .stream()
+                .filter(c -> c.getUser().getId().equals(userId))
+                .toList();
+    }
+
     @Override 
-    public Classroom createClassroom (Classroom classroom){
+     public Classroom createClassroom(Long userId, String name) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Classroom classroom = new Classroom();
+        classroom.setName(name);
+        classroom.setUser(user);
         return classroomRepository.save(classroom);
     }
 

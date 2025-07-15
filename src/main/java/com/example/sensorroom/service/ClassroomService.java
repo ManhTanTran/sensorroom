@@ -9,9 +9,11 @@ public interface ClassroomService {
     
     List<Classroom> getAllClassroom();
 
-    Classroom getClasroom(Long id);
+    Classroom getClassroom(Long id);
 
-    Classroom createClassroom(Classroom classroom);
+    List<Classroom> getClassroomsByUser(Long userId);
+
+    Classroom createClassroom(Long userId, String name);
 
     Classroom updateClassroom(Long id, ClassroomRequest classroomRequest);
 

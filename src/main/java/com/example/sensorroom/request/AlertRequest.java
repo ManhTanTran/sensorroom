@@ -1,5 +1,7 @@
 package com.example.sensorroom.request;
 
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -21,6 +23,13 @@ public class AlertRequest {
     @Size(max = 45)
     private String alertType;
 
-    private Boolean isResolved;
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private Status isResolved = Status.NO;
+
+    public enum Status {
+        YES,
+        NO
+    }
     
 }

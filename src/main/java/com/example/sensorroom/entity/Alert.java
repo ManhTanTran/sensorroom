@@ -13,33 +13,25 @@ import java.time.LocalDateTime;
 @Builder
 public class Alert {
     
-    @Id
+     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String alertType; 
+    private String alertType;
     private String message;
-    private boolean isResolved;
+    
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private Status isResolved = Status.NO;
 
-    private LocalDateTime recordedAt;
+    private LocalDateTime createdAt;
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.recordedAt = createdAt;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return recordedAt;
-    }
-
-    public Boolean getIsResolved() {
-        return isResolved;
-    }
-
-    public void setIsResolved(Boolean isResolved) {
-        this.isResolved = isResolved;
+    public enum Status {
+        YES,
+        NO
     }
 
     @ManyToOne
-    @JoinColumn(name = "device_id")
-    private Device device;
+    @JoinColumn(name = "classroom_id", nullable = false)
+    private Classroom classroom;
 }

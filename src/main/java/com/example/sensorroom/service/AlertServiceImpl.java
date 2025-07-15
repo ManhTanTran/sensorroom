@@ -6,9 +6,11 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.example.sensorroom.dao.AlertRepository;
-import com.example.sensorroom.dao.DeviceRepository;
+import com.example.sensorroom.dao.ClassroomRepository;
 import com.example.sensorroom.entity.Alert;
-import com.example.sensorroom.entity.Device;
+import com.example.sensorroom.entity.Alert.Status;
+import com.example.sensorroom.entity.Classroom;
+import com.example.sensorroom.request.AlertRequest;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -20,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class AlertServiceImpl implements AlertService {
     
     private final AlertRepository alertRepository;
-    private final DeviceRepository deviceRepository;
+    private final ClassroomRepository classroomRepository;
 
     @Override
     public Alert getAlert(Long id){
@@ -34,29 +36,41 @@ public class AlertServiceImpl implements AlertService {
     }
 
     @Override
-    public List<Alert> getAlertsByDevice(Long deviceId){
-        return alertRepository.findByDeviceId(deviceId);
+    public List<Alert> getAlertsByClassroom(Long classroomId){
+        return alertRepository.findAll()
+                .stream()
+                .filter(a -> a.getClassroom().getId().equals(classroomId))
+                .toList();
+    }
+
+    
+    @Override
+    public List<Alert> getAlertsByResolvedStatus(Status status) {
+        return alertRepository.findAll()
+                .stream()
+                .filter(a -> a.getIsResolved() == status)
+                .toList();
     }
 
     @Override
-    public List<Alert> getAlertsByResolvedStatus(Boolean isResolved){
-        return alertRepository.findByIsResolved(isResolved);
-    }
+    public Alert createAlert(Long classroomId, AlertRequest request) {
+        Classroom classroom = classroomRepository.findById(classroomId)
+                .orElseThrow(() -> new RuntimeException("Classroom not found"));
 
-    @Override
-    public Alert createAlert(Long deviceId, Alert alert) {
-        Device device = deviceRepository.findById(deviceId)
-            .orElseThrow(() -> new EntityNotFoundException("Device not found"));
-        alert.setDevice(device);
+        Alert alert = new Alert();
+        alert.setAlertType(request.getAlertType());
+        alert.setMessage(request.getMessage());
         alert.setCreatedAt(LocalDateTime.now());
-        alert.setIsResolved(alert.getIsResolved() != null ? alert.getIsResolved() : false);
+        alert.setIsResolved(Alert.Status.NO);
+        alert.setClassroom(classroom);
+
         return alertRepository.save(alert);
     }
 
     @Override
     public Alert resolveAlert(Long id) {
         Alert alert = getAlert(id);
-        alert.setIsResolved(true);
+        alert.setIsResolved(Alert.Status.YES);
         return alertRepository.save(alert);
     }
 

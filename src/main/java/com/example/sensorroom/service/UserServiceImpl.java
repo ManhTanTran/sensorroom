@@ -34,11 +34,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<User> getUsersByClassroom(Long classroomId) {
-        return userRepository.findByClassroomId(classroomId);
-    }
-
-    @Override
     public User createUser(User user) {
         if (user.getClassroom() != null) {
             Classroom classroom = classroomRepository.findById(user.getClassroom().getId())

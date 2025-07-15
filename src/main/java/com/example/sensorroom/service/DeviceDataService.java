@@ -3,6 +3,7 @@ package com.example.sensorroom.service;
 import java.util.List;
 
 import com.example.sensorroom.entity.DeviceData;
+import com.example.sensorroom.request.DeviceDataRequest;
 
 public interface DeviceDataService {
     
@@ -10,7 +11,7 @@ public interface DeviceDataService {
 
     List<DeviceData> getAllData();
 
-    List<DeviceData> getDataByDevice(Long deviceId);
+    List<DeviceData> getDataByClassroom(Long classroomId);
 
-    DeviceData createData(Long deviceId, DeviceData data);
+    DeviceData createData(Long classroomId, DeviceDataRequest request);
 }

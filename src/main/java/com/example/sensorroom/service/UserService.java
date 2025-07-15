@@ -10,8 +10,6 @@ public interface UserService {
 
     List<User> getAllUsers();
 
-    List<User> getUsersByClassroom(Long classroomId);
-
     User createUser(User user);
 
     User updateUser(Long id, User user);
