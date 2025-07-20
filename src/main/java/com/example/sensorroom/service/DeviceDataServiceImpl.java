@@ -2,85 +2,60 @@ package com.example.sensorroom.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import com.example.sensorroom.dao.ClassroomRepository;
 import com.example.sensorroom.dao.DeviceDataRepository;
-import com.example.sensorroom.dao.AlertRepository;
-import com.example.sensorroom.entity.Alert;
+import com.example.sensorroom.dao.DeviceRepository;
+import com.example.sensorroom.dto.devicedata.DeviceDataRequest;
+import com.example.sensorroom.dto.devicedata.DeviceDataResponse;
 import com.example.sensorroom.entity.Classroom;
+import com.example.sensorroom.entity.Device;
 import com.example.sensorroom.entity.DeviceData;
-import com.example.sensorroom.request.DeviceDataRequest;
+import com.example.sensorroom.mapper.DeviceDataMapper;
 
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class DeviceDataServiceImpl implements DeviceDataService {
     private final DeviceDataRepository deviceDataRepository;
+    private final DeviceRepository deviceRepository;
     private final ClassroomRepository classroomRepository;
-    private final AlertRepository alertRepository;
 
     @Override
-    public DeviceData getData(Long id) {
-        return deviceDataRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Data not found"));
-    }
-
-    @Override
-    public List<DeviceData> getAllData() {
-        return deviceDataRepository.findAll();
-    }
-
-     @Override
-    public List<DeviceData> getDataByClassroom(Long classroomId) {
+    public List<DeviceDataResponse> getAll() {
         return deviceDataRepository.findAll()
                 .stream()
-                .filter(d -> d.getClassroom().getId().equals(classroomId))
-                .toList();
+                .map(DeviceDataMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional
-    public DeviceData createData(Long classroomId, DeviceDataRequest request) {
-    Classroom classroom = classroomRepository.findById(classroomId)
-            .orElseThrow(() -> new EntityNotFoundException("Classroom not found"));
-
-    DeviceData data = new DeviceData();
-    data.setTemperature(request.getTemperature());
-    data.setHumidity(request.getHumidity());
-    data.setCo2(request.getCo2());
-    data.setCreatedAt(LocalDateTime.now());
-    data.setClassroom(classroom);
-
-    DeviceData savedData = deviceDataRepository.save(data);
-
-    checkForAlerts(savedData, classroom);
-
-    return savedData;
-}
-
-
-    private void checkForAlerts(DeviceData data, Classroom classroom) {
-        if (data.getTemperature() != null && data.getTemperature() > 30) {
-            createAlert("TEMP_HIGH", "Temperature exceeded 30°C", classroom);
-        }
-        if (data.getCo2() != null && data.getCo2() > 1000) {
-            createAlert("CO2_HIGH", "CO2 exceeded 1000 ppm", classroom);
-        }
+    public List<DeviceDataResponse> getByDeviceId(Long deviceId) {
+        return deviceDataRepository.findByDeviceId(deviceId)
+                .stream()
+                .map(DeviceDataMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
-    private void createAlert(String type, String message, Classroom classroom) {
-        Alert alert = new Alert();
-        alert.setAlertType(type);
-        alert.setMessage(message);
-        alert.setIsResolved(Alert.Status.NO);
-        alert.setCreatedAt(LocalDateTime.now());
-        alert.setClassroom(classroom);
-        alertRepository.save(alert);
+    @Override
+    public DeviceDataResponse create(DeviceDataRequest request) {
+        Device device = deviceRepository.findById(request.getDeviceId())
+                .orElseThrow(() -> new EntityNotFoundException("Device not found"));
+
+        Classroom classroom = classroomRepository.findById(request.getClassroomId())
+                .orElseThrow(() -> new EntityNotFoundException("Classroom not found"));
+
+        DeviceData deviceData = DeviceDataMapper.toEntity(request, device, classroom);
+        deviceData.setDevice(device);
+        deviceData.setClassroom(classroom);
+        deviceData.setCreatedAt(LocalDateTime.now());
+
+        return DeviceDataMapper.toResponse(deviceDataRepository.save(deviceData));
     }
 }
+

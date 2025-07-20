@@ -3,20 +3,14 @@ package com.example.sensorroom.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.example.sensorroom.entity.User;
-import com.example.sensorroom.request.UserRequest;
+import com.example.sensorroom.dto.user.UserRequest;
+import com.example.sensorroom.dto.user.UserResponse;
+import com.example.sensorroom.dto.user.UserUpdateRequest;
 import com.example.sensorroom.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,51 +18,40 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("api/users")
 @RequiredArgsConstructor
-@Tag(name= "User Rest API Endpoints", description = "Operations related to users.")
+@Tag(name = "User Rest API Endpoints", description = "Operations related to users.")
 public class UserController {
-	
+
     private final UserService userService;
 
-    @Operation(summary = "Fetch single user", description = "Get a single user")
+    @Operation(summary = "Get user by ID", description = "Get detailed information of a specific user")
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUser(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUser(id));
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    @Operation(summary = "Get all users", description = "Retrieve a list of all users")
+    @Operation(summary = "Get all users", description = "List all users in the system")
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    @Operation(summary = "Create a new user", description = "Add a new user")
+    @Operation(summary = "Create a new user", description = "Add a new user with login and personal info")
     @PostMapping
-    public ResponseEntity<User> createUser(@Valid @RequestBody UserRequest request) {
-        User user = new User();
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setRole(Enum.valueOf(com.example.sensorroom.entity.RoleType.class, request.getRole()));
-        // Gán classroom trong service
-        return ResponseEntity.ok(userService.createUser(user));
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest request) {
+        return ResponseEntity.ok(userService.createUser(request));
     }
 
-    @Operation(summary = "Update an existing user", description = "Update user details by ID")
+    @Operation(summary = "Update existing user", description = "Update user information by ID")
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id,
-                                           @Valid @RequestBody UserRequest request) {
-        User user = new User();
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setRole(Enum.valueOf(com.example.sensorroom.entity.RoleType.class, request.getRole()));
-        return ResponseEntity.ok(userService.updateUser(id, user));
+    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id,
+                                                   @Valid @RequestBody UserUpdateRequest request) {
+        return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
-
-    @Operation(summary = "Delate a user", description = "Delete a user by ID")
+    @Operation(summary = "Delete a user", description = "Delete a user by ID")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
-
 }

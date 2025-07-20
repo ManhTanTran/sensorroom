@@ -1,67 +1,65 @@
 package com.example.sensorroom.service;
 
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-
 import com.example.sensorroom.dao.ClassroomRepository;
-import com.example.sensorroom.dao.UserRepository;
+import com.example.sensorroom.dto.classroom.*;
 import com.example.sensorroom.entity.Classroom;
-import com.example.sensorroom.entity.User;
-import com.example.sensorroom.request.ClassroomRequest;
+import com.example.sensorroom.exception.ResourceNotFoundException;
+import com.example.sensorroom.mapper.ClassroomMapper;
 
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class ClassroomServiceImpl implements ClassroomService{
+public class ClassroomServiceImpl implements ClassroomService {
 
     private final ClassroomRepository classroomRepository;
-    private final UserRepository userRepository;
 
-    @Override 
-    public Classroom getClassroom(Long id){
-        return classroomRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Classroom not found"));
+    @Override
+    public ClassroomResponse create(ClassroomRequest request) {
+        Classroom classroom = ClassroomMapper.toEntity(request);
+        classroom.setActive(true); // default active
+        Classroom saved = classroomRepository.save(classroom);
+        return ClassroomMapper.toResponse(saved);
     }
 
     @Override
-    public List<Classroom> getAllClassroom(){
-        return classroomRepository.findAll();
+    public ClassroomResponse update(Long id, ClassroomUpdateRequest request) {
+        Classroom classroom = classroomRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id " + id));
+
+        ClassroomMapper.updateEntity(classroom, request);
+
+        Classroom updated = classroomRepository.save(classroom);
+        return ClassroomMapper.toResponse(updated);
     }
 
     @Override
-    public List<Classroom> getClassroomsByUser(Long userId) {
+    public void delete(Long id) {
+        Classroom classroom = classroomRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id " + id));
+        classroomRepository.delete(classroom);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClassroomResponse> getAll() {
         return classroomRepository.findAll()
                 .stream()
-                .filter(c -> c.getUser().getId().equals(userId))
-                .toList();
-    }
-
-    @Override 
-     public Classroom createClassroom(Long userId, String name) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        Classroom classroom = new Classroom();
-        classroom.setName(name);
-        classroom.setUser(user);
-        return classroomRepository.save(classroom);
+                .map(ClassroomMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Classroom updateClassroom(Long id, ClassroomRequest classroomRequest) {
-    Classroom existing = classroomRepository.findById(id)
-        .orElseThrow(() -> new EntityNotFoundException("Classroom not found"));
-
-        existing.setName(classroomRequest.getName());
-        return classroomRepository.save(existing);
-    }
-    
-    @Override
-    public void deleteClassroom (Long id){
-        classroomRepository.deleteById(id);
+    @Transactional(readOnly = true)
+    public ClassroomResponse getById(Long id) {
+        Classroom classroom = classroomRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id " + id));
+        return ClassroomMapper.toResponse(classroom);
     }
 }

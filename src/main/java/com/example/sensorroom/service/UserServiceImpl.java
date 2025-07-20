@@ -1,67 +1,92 @@
 package com.example.sensorroom.service;
 
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.example.sensorroom.dao.ClassroomRepository;
 import com.example.sensorroom.dao.UserRepository;
+import com.example.sensorroom.dto.user.UserRequest;
+import com.example.sensorroom.dto.user.UserResponse;
+import com.example.sensorroom.dto.user.UserUpdateRequest;
 import com.example.sensorroom.entity.Classroom;
-import com.example.sensorroom.entity.RoleType;
 import com.example.sensorroom.entity.User;
+import com.example.sensorroom.mapper.UserMapper;
 
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class UserServiceImpl implements UserService {
-
     private final UserRepository userRepository;
     private final ClassroomRepository classroomRepository;
 
     @Override
-    public User getUser(Long id) {
-        return userRepository.findById(id)
+    public UserResponse getUserById(Long id) {
+        return UserMapper.toResponse(userRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("User not found")));
+    }
+
+    @Override
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(UserMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public UserResponse createUser(UserRequest request) {
+        User user = UserMapper.toEntity(request);
+        if (request.getClassroomId() != null) {
+            Classroom classroom = classroomRepository.findById(request.getClassroomId())
+                .orElseThrow(() -> new EntityNotFoundException("Classroom not found"));
+            user.setClassroom(classroom);
+        }
+        user.setCreatedAt(new Date(System.currentTimeMillis()));
+        return UserMapper.toResponse(userRepository.save(user));
+    }
+
+    @Override
+    public UserResponse updateUser(Long id, UserUpdateRequest request) {
+        User user = userRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("User not found"));
-    }
 
-    @Override
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
-    @Override
-    public User createUser(User user) {
-        if (user.getClassroom() != null) {
-            Classroom classroom = classroomRepository.findById(user.getClassroom().getId())
-                .orElseThrow(() -> new EntityNotFoundException("Classroom not found"));
-            user.setClassroom(classroom);
-        }
-        user.setRole(RoleType.valueOf(user.getRole().name()));
-        return userRepository.save(user);
-    }
-
-    @Override
-    public User updateUser(Long id, User updatedUser) {
-        User user = getUser(id);
-        user.setName(updatedUser.getName());
-        user.setEmail(updatedUser.getEmail());
-        user.setRole(updatedUser.getRole());
-
-        if (updatedUser.getClassroom() != null) {
-            Classroom classroom = classroomRepository.findById(updatedUser.getClassroom().getId())
+        if (request.getClassroomId() != null) {
+            Classroom classroom = classroomRepository.findById(request.getClassroomId())
                 .orElseThrow(() -> new EntityNotFoundException("Classroom not found"));
             user.setClassroom(classroom);
         }
 
-        return userRepository.save(user);
+        UserMapper.updateEntity(user, request);
+
+        return UserMapper.toResponse(userRepository.save(user));
     }
+
 
     @Override
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }
+
+    @Override
+    public User getCurrentUser() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        String username;
+        if (principal instanceof UserDetails) {
+            username = ((UserDetails) principal).getUsername();
+        } else {
+            username = principal.toString();
+        }
+
+        return userRepository.findByUsername(username)
+            .orElseThrow(() -> new EntityNotFoundException("Current user not found"));
+    }
 }
+

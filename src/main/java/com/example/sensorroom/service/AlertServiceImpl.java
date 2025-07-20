@@ -2,80 +2,143 @@ package com.example.sensorroom.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.sensorroom.dao.AlertRepository;
-import com.example.sensorroom.dao.ClassroomRepository;
+import com.example.sensorroom.dao.DeviceRepository;
+import com.example.sensorroom.dto.alert.AlertRequest;
+import com.example.sensorroom.dto.alert.AlertResponse;
 import com.example.sensorroom.entity.Alert;
 import com.example.sensorroom.entity.Alert.Status;
 import com.example.sensorroom.entity.Classroom;
-import com.example.sensorroom.request.AlertRequest;
+import com.example.sensorroom.entity.Device;
+import com.example.sensorroom.entity.RoleType;
+import com.example.sensorroom.entity.User;
+import com.example.sensorroom.exception.ResourceNotFoundException;
+import com.example.sensorroom.mapper.AlertMapper;
 
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AlertServiceImpl implements AlertService {
-    
+
     private final AlertRepository alertRepository;
-    private final ClassroomRepository classroomRepository;
+    private final DeviceRepository deviceRepository;
+    private final UserService userService;
 
-    @Override
-    public Alert getAlert(Long id){
-        return alertRepository.findById(id)
-            .orElseThrow(()-> new EntityNotFoundException("Alert not found"));
+    private boolean isAdmin(User user) {
+        return user.getAccountType() == RoleType.ADMIN;
     }
 
-    @Override 
-    public List<Alert> getAllAlerts(){
-        return alertRepository.findAll();
+    private void checkAccess(User user, Classroom classroom) {
+        if (!isAdmin(user) && !classroom.equals(user.getClassroom())) {
+            throw new AccessDeniedException("You do not have permission for this classroom");
+        }
     }
 
     @Override
-    public List<Alert> getAlertsByClassroom(Long classroomId){
-        return alertRepository.findAll()
+    public List<AlertResponse> getAll() {
+        User user = userService.getCurrentUser();
+
+        if (isAdmin(user)) {
+            return alertRepository.findAll()
+                    .stream()
+                    .map(AlertMapper::toResponse)
+                    .collect(Collectors.toList());
+        }
+
+        return alertRepository.findByDevice_Classroom(user.getClassroom())
                 .stream()
-                .filter(a -> a.getClassroom().getId().equals(classroomId))
-                .toList();
+                .map(AlertMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
-    
     @Override
-    public List<Alert> getAlertsByResolvedStatus(Status status) {
-        return alertRepository.findAll()
+    public AlertResponse getById(Long id) {
+        Alert alert = alertRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Alert not found"));
+
+        User user = userService.getCurrentUser();
+        checkAccess(user, alert.getDevice().getClassroom());
+
+        return AlertMapper.toResponse(alert);
+    }
+
+    @Override
+    public List<AlertResponse> getByClassroomId(Long classroomId) {
+        User user = userService.getCurrentUser();
+
+        Classroom classroom = user.getClassroom();
+        if (isAdmin(user) || (classroom != null && classroom.getId().equals(classroomId))) {
+            return alertRepository.findByDevice_Classroom_Id(classroomId)
+                    .stream()
+                    .map(AlertMapper::toResponse)
+                    .collect(Collectors.toList());
+        }
+
+        throw new AccessDeniedException("You do not have access to this classroom");
+    }
+
+    @Override
+    public List<AlertResponse> getByStatus(Status status) {
+        User user = userService.getCurrentUser();
+
+        if (isAdmin(user)) {
+            return alertRepository.findByIsResolved(status)
+                    .stream()
+                    .map(AlertMapper::toResponse)
+                    .collect(Collectors.toList());
+        }
+
+        return alertRepository.findByIsResolvedAndDevice_Classroom(status, user.getClassroom())
                 .stream()
-                .filter(a -> a.getIsResolved() == status)
-                .toList();
+                .map(AlertMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Alert createAlert(Long classroomId, AlertRequest request) {
-        Classroom classroom = classroomRepository.findById(classroomId)
-                .orElseThrow(() -> new RuntimeException("Classroom not found"));
+    @Transactional
+    public AlertResponse create(AlertRequest request) {
+        Device device = deviceRepository.findById(request.getDeviceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
 
-        Alert alert = new Alert();
-        alert.setAlertType(request.getAlertType());
-        alert.setMessage(request.getMessage());
+        User user = userService.getCurrentUser();
+        checkAccess(user, device.getClassroom());
+
+        Alert alert = AlertMapper.toEntity(request, device.getClassroom(), device);
         alert.setCreatedAt(LocalDateTime.now());
-        alert.setIsResolved(Alert.Status.NO);
-        alert.setClassroom(classroom);
+        alert.setIsResolved(Status.NO);
 
-        return alertRepository.save(alert);
+        return AlertMapper.toResponse(alertRepository.save(alert));
     }
 
     @Override
-    public Alert resolveAlert(Long id) {
-        Alert alert = getAlert(id);
-        alert.setIsResolved(Alert.Status.YES);
-        return alertRepository.save(alert);
+    @Transactional
+    public void resolveAlert(Long id) {
+        Alert alert = alertRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Alert not found"));
+
+        User user = userService.getCurrentUser();
+        checkAccess(user, alert.getDevice().getClassroom());
+
+        alert.setIsResolved(Status.YES);
+        alertRepository.save(alert);
     }
 
     @Override
-    public void deleteAlert(Long id) {
-        alertRepository.deleteById(id);
+    @Transactional
+    public void delete(Long id) {
+        Alert alert = alertRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Alert not found"));
+
+        User user = userService.getCurrentUser();
+        checkAccess(user, alert.getDevice().getClassroom());
+
+        alertRepository.delete(alert);
     }
 }

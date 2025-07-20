@@ -1,21 +1,18 @@
 package com.example.sensorroom.service;
 
+import com.example.sensorroom.dto.classroom.*;
+
 import java.util.List;
 
-import com.example.sensorroom.entity.Classroom;
-import com.example.sensorroom.request.ClassroomRequest;
-
 public interface ClassroomService {
-    
-    List<Classroom> getAllClassroom();
 
-    Classroom getClassroom(Long id);
+    ClassroomResponse create(ClassroomRequest request);
 
-    List<Classroom> getClassroomsByUser(Long userId);
+    ClassroomResponse update(Long id, ClassroomUpdateRequest request);
 
-    Classroom createClassroom(Long userId, String name);
+    void delete(Long id);
 
-    Classroom updateClassroom(Long id, ClassroomRequest classroomRequest);
+    List<ClassroomResponse> getAll();
 
-    void deleteClassroom(Long id);
+    ClassroomResponse getById(Long id);
 }

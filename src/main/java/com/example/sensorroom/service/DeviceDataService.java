@@ -2,16 +2,14 @@ package com.example.sensorroom.service;
 
 import java.util.List;
 
-import com.example.sensorroom.entity.DeviceData;
-import com.example.sensorroom.request.DeviceDataRequest;
+import com.example.sensorroom.dto.devicedata.DeviceDataRequest;
+import com.example.sensorroom.dto.devicedata.DeviceDataResponse;
 
 public interface DeviceDataService {
-    
-    DeviceData getData(Long id);
 
-    List<DeviceData> getAllData();
+    List<DeviceDataResponse> getAll();
 
-    List<DeviceData> getDataByClassroom(Long classroomId);
+    List<DeviceDataResponse> getByDeviceId(Long deviceId);
 
-    DeviceData createData(Long classroomId, DeviceDataRequest request);
+    DeviceDataResponse create(DeviceDataRequest request);
 }

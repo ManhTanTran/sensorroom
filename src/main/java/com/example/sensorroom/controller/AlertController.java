@@ -1,17 +1,15 @@
 package com.example.sensorroom.controller;
 
-import java.util.List;
-
+import com.example.sensorroom.dto.alert.AlertRequest;
+import com.example.sensorroom.dto.alert.AlertResponse;
+import com.example.sensorroom.entity.Alert.Status;
+import com.example.sensorroom.service.AlertService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.example.sensorroom.entity.Alert;
-import com.example.sensorroom.entity.Alert.Status;
-import com.example.sensorroom.request.AlertRequest;
-import com.example.sensorroom.service.AlertService;
-
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/alerts")
@@ -20,40 +18,53 @@ public class AlertController {
 
     private final AlertService alertService;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Alert> getAlert(@PathVariable Long id) {
-        return ResponseEntity.ok(alertService.getAlert(id));
-    }
-
+    // 1. Danh sách tất cả cảnh báo (ADMIN toàn quyền, USER chỉ xem phòng học mình phụ trách)
     @GetMapping
-    public ResponseEntity<List<Alert>> getAllAlerts() {
-        return ResponseEntity.ok(alertService.getAllAlerts());
+    public ResponseEntity<List<AlertResponse>> getAllAlerts() {
+        return ResponseEntity.ok(alertService.getAll());
     }
 
-    @GetMapping("/classroom/{classroomId}")
-    public ResponseEntity<List<Alert>> getAlertsByClassroom(@PathVariable Long classroomId) {
-        return ResponseEntity.ok(alertService.getAlertsByClassroom(classroomId));
+    // 2. Xem chi tiết 1 cảnh báo
+    @GetMapping("/{id}")
+    public ResponseEntity<AlertResponse> getAlertById(@PathVariable Long id) {
+        return ResponseEntity.ok(alertService.getById(id));
     }
 
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<Alert>> getAlertsByStatus(@PathVariable Status status) {
-        return ResponseEntity.ok(alertService.getAlertsByResolvedStatus(status));
+    // 3. Tạo cảnh báo mới
+    @PostMapping
+    public ResponseEntity<AlertResponse> createAlert(@Valid @RequestBody AlertRequest request) {
+        return ResponseEntity.ok(alertService.create(request));
     }
 
-    @PostMapping("/classroom/{classroomId}")
-    public ResponseEntity<Alert> createAlert(@PathVariable Long classroomId,
-                                             @Valid @RequestBody AlertRequest request) {
-        return ResponseEntity.ok(alertService.createAlert(classroomId, request));
-    }
-
+    // 4. Đánh dấu cảnh báo đã được xử lý
     @PutMapping("/resolve/{id}")
-    public ResponseEntity<Alert> resolveAlert(@PathVariable Long id) {
-        return ResponseEntity.ok(alertService.resolveAlert(id));
+    public ResponseEntity<Void> resolveAlert(@PathVariable Long id) {
+        alertService.resolveAlert(id);
+        return ResponseEntity.noContent().build();
     }
 
+    // 5. Xóa cảnh báo
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAlert(@PathVariable Long id) {
-        alertService.deleteAlert(id);
+        alertService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // 6. Lọc theo phòng học (classroomId) – ADMIN và USER chỉ thấy dữ liệu của mình
+    @GetMapping("/classroom/{classroomId}")
+    public ResponseEntity<List<AlertResponse>> getByClassroom(@PathVariable Long classroomId) {
+        return ResponseEntity.ok(alertService.getByClassroomId(classroomId));
+    }
+
+    // 7. Lọc theo trạng thái cảnh báo (YES: đã xử lý, NO: chưa xử lý)
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<AlertResponse>> getByStatus(@PathVariable Status status) {
+        return ResponseEntity.ok(alertService.getByStatus(status));
+    }
+
+    // 8. Xem danh sách lịch sử cảnh báo (status = YES)
+    @GetMapping("/history")
+    public ResponseEntity<List<AlertResponse>> getResolvedAlerts() {
+        return ResponseEntity.ok(alertService.getByStatus(Status.YES));
     }
 }
