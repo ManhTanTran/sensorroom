@@ -1,4 +1,4 @@
-package com.example.sensorroom.service;
+package com.example.sensorroom.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,9 +14,10 @@ import com.example.sensorroom.dto.devicedata.DeviceDataResponse;
 import com.example.sensorroom.entity.Classroom;
 import com.example.sensorroom.entity.Device;
 import com.example.sensorroom.entity.DeviceData;
+import com.example.sensorroom.exception.ResourceNotFoundException;
 import com.example.sensorroom.mapper.DeviceDataMapper;
+import com.example.sensorroom.service.DeviceDataService;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -45,10 +46,10 @@ public class DeviceDataServiceImpl implements DeviceDataService {
     @Override
     public DeviceDataResponse create(DeviceDataRequest request) {
         Device device = deviceRepository.findById(request.getDeviceId())
-                .orElseThrow(() -> new EntityNotFoundException("Device not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
 
         Classroom classroom = classroomRepository.findById(request.getClassroomId())
-                .orElseThrow(() -> new EntityNotFoundException("Classroom not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Classroom not found"));
 
         DeviceData deviceData = DeviceDataMapper.toEntity(request, device, classroom);
         deviceData.setDevice(device);

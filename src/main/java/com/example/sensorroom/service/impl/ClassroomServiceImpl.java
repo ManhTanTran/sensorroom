@@ -1,10 +1,11 @@
-package com.example.sensorroom.service;
+package com.example.sensorroom.service.impl;
 
 import com.example.sensorroom.dao.ClassroomRepository;
 import com.example.sensorroom.dto.classroom.*;
 import com.example.sensorroom.entity.Classroom;
 import com.example.sensorroom.exception.ResourceNotFoundException;
 import com.example.sensorroom.mapper.ClassroomMapper;
+import com.example.sensorroom.service.ClassroomService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class ClassroomServiceImpl implements ClassroomService {
         classroom.setActive(true); // default active
         Classroom saved = classroomRepository.save(classroom);
         return ClassroomMapper.toResponse(saved);
-    }
+    }   
 
     @Override
     public ClassroomResponse update(Long id, ClassroomUpdateRequest request) {

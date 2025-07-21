@@ -1,10 +1,9 @@
-package com.example.sensorroom.service;
+package com.example.sensorroom.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +19,7 @@ import com.example.sensorroom.entity.RoleType;
 import com.example.sensorroom.entity.User;
 import com.example.sensorroom.exception.ResourceNotFoundException;
 import com.example.sensorroom.mapper.AlertMapper;
+import com.example.sensorroom.service.AlertService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,73 +29,66 @@ public class AlertServiceImpl implements AlertService {
 
     private final AlertRepository alertRepository;
     private final DeviceRepository deviceRepository;
-    private final UserService userService;
 
     private boolean isAdmin(User user) {
         return user.getAccountType() == RoleType.ADMIN;
     }
 
     private void checkAccess(User user, Classroom classroom) {
-        if (!isAdmin(user) && !classroom.equals(user.getClassroom())) {
-            throw new AccessDeniedException("You do not have permission for this classroom");
+        if (!isAdmin(user) && (user.getClassroom() == null || !user.getClassroom().equals(classroom))) {
+            throw new RuntimeException("Access denied");
         }
     }
 
     @Override
-    public List<AlertResponse> getAll() {
-        User user = userService.getCurrentUser();
-
-        if (isAdmin(user)) {
+    public List<AlertResponse> getAll(User currentUser) {
+        if (isAdmin(currentUser)) {
             return alertRepository.findAll()
                     .stream()
                     .map(AlertMapper::toResponse)
                     .collect(Collectors.toList());
         }
 
-        return alertRepository.findByDevice_Classroom(user.getClassroom())
+        return alertRepository.findByDevice_Classroom(currentUser.getClassroom())
                 .stream()
                 .map(AlertMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public AlertResponse getById(Long id) {
+    public AlertResponse getById(Long id, User currentUser) {
         Alert alert = alertRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Alert not found"));
 
-        User user = userService.getCurrentUser();
-        checkAccess(user, alert.getDevice().getClassroom());
+        checkAccess(currentUser, alert.getDevice().getClassroom());
 
         return AlertMapper.toResponse(alert);
     }
 
     @Override
-    public List<AlertResponse> getByClassroomId(Long classroomId) {
-        User user = userService.getCurrentUser();
+    public List<AlertResponse> getByClassroomId(Long classroomId, User currentUser) {
+        Classroom classroom = currentUser.getClassroom();
 
-        Classroom classroom = user.getClassroom();
-        if (isAdmin(user) || (classroom != null && classroom.getId().equals(classroomId))) {
+        if (isAdmin(currentUser) || (classroom != null && classroom.getId().equals(classroomId))) {
             return alertRepository.findByDevice_Classroom_Id(classroomId)
                     .stream()
                     .map(AlertMapper::toResponse)
                     .collect(Collectors.toList());
         }
 
-        throw new AccessDeniedException("You do not have access to this classroom");
+        throw new RuntimeException("Access denied");
     }
 
     @Override
-    public List<AlertResponse> getByStatus(Status status) {
-        User user = userService.getCurrentUser();
-
-        if (isAdmin(user)) {
+    public List<AlertResponse> getByStatus(Status status, User currentUser) {
+        if (isAdmin(currentUser)) {
             return alertRepository.findByIsResolved(status)
                     .stream()
                     .map(AlertMapper::toResponse)
                     .collect(Collectors.toList());
         }
 
-        return alertRepository.findByIsResolvedAndDevice_Classroom(status, user.getClassroom())
+        return alertRepository.findByIsResolvedAndDevice_Classroom(status, currentUser.getClassroom())
                 .stream()
                 .map(AlertMapper::toResponse)
                 .collect(Collectors.toList());
@@ -103,12 +96,11 @@ public class AlertServiceImpl implements AlertService {
 
     @Override
     @Transactional
-    public AlertResponse create(AlertRequest request) {
+    public AlertResponse create(AlertRequest request, User currentUser) {
         Device device = deviceRepository.findById(request.getDeviceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
 
-        User user = userService.getCurrentUser();
-        checkAccess(user, device.getClassroom());
+        checkAccess(currentUser, device.getClassroom());
 
         Alert alert = AlertMapper.toEntity(request, device.getClassroom(), device);
         alert.setCreatedAt(LocalDateTime.now());
@@ -119,12 +111,11 @@ public class AlertServiceImpl implements AlertService {
 
     @Override
     @Transactional
-    public void resolveAlert(Long id) {
+    public void resolveAlert(Long id, User currentUser) {
         Alert alert = alertRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Alert not found"));
 
-        User user = userService.getCurrentUser();
-        checkAccess(user, alert.getDevice().getClassroom());
+        checkAccess(currentUser, alert.getDevice().getClassroom());
 
         alert.setIsResolved(Status.YES);
         alertRepository.save(alert);
@@ -132,12 +123,11 @@ public class AlertServiceImpl implements AlertService {
 
     @Override
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, User currentUser) {
         Alert alert = alertRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Alert not found"));
 
-        User user = userService.getCurrentUser();
-        checkAccess(user, alert.getDevice().getClassroom());
+        checkAccess(currentUser, alert.getDevice().getClassroom());
 
         alertRepository.delete(alert);
     }

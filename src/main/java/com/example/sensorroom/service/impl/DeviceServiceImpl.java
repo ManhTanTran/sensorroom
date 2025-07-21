@@ -1,4 +1,4 @@
-package com.example.sensorroom.service;
+package com.example.sensorroom.service.impl;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -14,9 +14,10 @@ import com.example.sensorroom.dto.device.DeviceUpdateRequest;
 import com.example.sensorroom.entity.Classroom;
 import com.example.sensorroom.entity.Device;
 import com.example.sensorroom.entity.User;
+import com.example.sensorroom.exception.ResourceNotFoundException;
 import com.example.sensorroom.mapper.DeviceMapper;
+import com.example.sensorroom.service.DeviceService;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -29,7 +30,7 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
     public DeviceResponse getById(Long id) {
         return DeviceMapper.toResponse(deviceRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Device not found")));
+                .orElseThrow(() -> new ResourceNotFoundException("Device not found")));
     }
 
     @Override
@@ -43,10 +44,10 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
 public DeviceResponse create(DeviceRequest request) {
     Classroom classroom = classroomRepository.findById(request.getClassroomId())
-            .orElseThrow(() -> new EntityNotFoundException("Classroom not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Classroom not found"));
 
     User creator = userRepository.findById(request.getCreatedBy())
-            .orElseThrow(() -> new EntityNotFoundException("User not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
     Device device = DeviceMapper.toEntity(request, creator, classroom);
     return DeviceMapper.toResponse(deviceRepository.save(device));
@@ -55,7 +56,7 @@ public DeviceResponse create(DeviceRequest request) {
     @Override
     public DeviceResponse update(Long id, DeviceUpdateRequest request) {
         Device device = deviceRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Device not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
         DeviceMapper.updateEntity(device, request);
         return DeviceMapper.toResponse(deviceRepository.save(device));
     }

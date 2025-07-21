@@ -1,11 +1,9 @@
-package com.example.sensorroom.service;
+package com.example.sensorroom.service.impl;
 
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.example.sensorroom.dao.ClassroomRepository;
@@ -16,6 +14,7 @@ import com.example.sensorroom.dto.user.UserUpdateRequest;
 import com.example.sensorroom.entity.Classroom;
 import com.example.sensorroom.entity.User;
 import com.example.sensorroom.mapper.UserMapper;
+import com.example.sensorroom.service.UserService;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -74,19 +73,6 @@ public class UserServiceImpl implements UserService {
         userRepository.deleteById(id);
     }
 
-    @Override
-    public User getCurrentUser() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        String username;
-        if (principal instanceof UserDetails) {
-            username = ((UserDetails) principal).getUsername();
-        } else {
-            username = principal.toString();
-        }
-
-        return userRepository.findByUsername(username)
-            .orElseThrow(() -> new EntityNotFoundException("Current user not found"));
-    }
+    
 }
 

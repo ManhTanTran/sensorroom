@@ -24,7 +24,7 @@ public class Classroom {
     @Column(name = "code", nullable = false, unique = true)
     private String code;
 
-    @Column(nullable = false)
+    @Column(name = "classroom_name", nullable = false)
     private String name;
 
     @Column(nullable = false)
