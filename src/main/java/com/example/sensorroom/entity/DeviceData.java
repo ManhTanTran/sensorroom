@@ -20,6 +20,7 @@ public class DeviceData {
     private Double temperature;
     private Double humidity;
     private Double light;
+    private Double co2;
 
     private LocalDateTime createdAt;
 

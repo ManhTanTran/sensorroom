@@ -15,6 +15,7 @@ public class DeviceDataMapper {
                 .temperature(request.getTemperature())
                 .humidity(request.getHumidity())
                 .light(request.getLight())
+                .co2(request.getCo2())
                 .createdAt(LocalDateTime.now())
                 .device(device)
                 .classroom(classroom)
@@ -22,16 +23,21 @@ public class DeviceDataMapper {
     }
 
     public static DeviceDataResponse toResponse(DeviceData data) {
-    return DeviceDataResponse.builder()
-            .id(data.getId())
-            .temperature(data.getTemperature())
-            .humidity(data.getHumidity())
-            .light(data.getLight())
-            .createdAt(data.getCreatedAt())
-            .deviceId(data.getDevice().getId())
-            .deviceName(data.getDevice().getName())
-            .classroomId(data.getClassroom().getId())
-            .classroomName(data.getClassroom().getName())
-            .build();
-}
+        Device device = data.getDevice();
+        String deviceType = device.getType().name();
+
+        return DeviceDataResponse.builder()
+                .id(data.getId())
+                .temperature("TEMPERATURE".equals(deviceType) ? data.getTemperature() : null)
+                .humidity("HUMIDITY".equals(deviceType) ? data.getHumidity() : null)
+                .light("LIGHT".equals(deviceType) ? data.getLight() : null)
+                .co2("CO2".equals(deviceType) ? data.getCo2() : null)
+                .createdAt(data.getCreatedAt())
+                .deviceId(device.getId())
+                .deviceName(device.getName())
+                .classroomId(data.getClassroom().getId())
+                .classroomName(data.getClassroom().getName())
+                .build();
+    }
+
 }

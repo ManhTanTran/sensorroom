@@ -2,7 +2,6 @@ package com.example.sensorroom.mapper;
 
 import com.example.sensorroom.dto.classroom.ClassroomRequest;
 import com.example.sensorroom.dto.classroom.ClassroomResponse;
-import com.example.sensorroom.dto.classroom.ClassroomUpdateRequest;
 import com.example.sensorroom.entity.Classroom;
 
 public class ClassroomMapper {
@@ -18,13 +17,6 @@ public class ClassroomMapper {
                 .build(); // createdAt và active sẽ được set ở entity (@PrePersist hoặc default)
     }
 
-    public static void updateEntity(Classroom classroom, ClassroomUpdateRequest request) {
-        if (request.getName() != null) classroom.setName(request.getName());
-        if (request.getBuilding() != null) classroom.setBuilding(request.getBuilding());
-        if (request.getFloor() != null) classroom.setFloor(request.getFloor());
-        if (request.getStatus() != null) classroom.setStatus(request.getStatus());
-        if (request.getNote() != null) classroom.setNote(request.getNote());
-    }
 
     public static ClassroomResponse toResponse(Classroom classroom) {
         return ClassroomResponse.builder()

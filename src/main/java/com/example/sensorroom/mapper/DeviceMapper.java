@@ -3,7 +3,6 @@ package com.example.sensorroom.mapper;
 import com.example.sensorroom.entity.Device;
 import com.example.sensorroom.dto.device.DeviceRequest;
 import com.example.sensorroom.dto.device.DeviceResponse;
-import com.example.sensorroom.dto.device.DeviceUpdateRequest;
 import com.example.sensorroom.entity.Classroom;
 import com.example.sensorroom.entity.User;
 
@@ -42,15 +41,4 @@ public class DeviceMapper {
             .build();
     }
 
-    public static void updateEntity(Device device, DeviceUpdateRequest request) {
-        if (request.getName() != null) device.setName(request.getName());
-        if (request.getStatus() != null) device.setStatus(request.getStatus());
-        if (request.getDataCycle() != null) device.setDataCycle(request.getDataCycle());
-        if (request.getNotes() != null) device.setNotes(request.getNotes());
-        if (request.getClassroomId() != null) {
-            Classroom classroom = new Classroom();
-            classroom.setId(request.getClassroomId());
-            device.setClassroom(classroom);
-        }
-    }
 }

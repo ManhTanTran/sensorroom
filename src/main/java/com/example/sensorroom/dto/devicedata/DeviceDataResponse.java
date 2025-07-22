@@ -12,6 +12,7 @@ public class DeviceDataResponse {
     private Double temperature;
     private Double humidity;
     private Double light;
+    private Double co2;
     private LocalDateTime createdAt;
     private Long deviceId;
     private String deviceName;

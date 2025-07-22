@@ -1,12 +1,23 @@
-package com.example.sensorroom.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+package com.example.sensorroom.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 @Entity
-@Table(name = "alerts")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -14,33 +25,24 @@ import java.time.LocalDateTime;
 public class Alert {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(nullable = false)
     private Long id;
 
-    private String alertType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "device_id")
+    private Device device; 
+
+    @ManyToOne
+    @JoinColumn(name = "device_data_id")
+    private DeviceData deviceData;
+
     private String message;
-    
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private Status isResolved = Status.NO;
 
     private LocalDateTime createdAt;
 
-    @ManyToOne
-    @JoinColumn(name = "classroom_id", nullable = false)
-    private Classroom classroom;
-
-    @ManyToOne
-    @JoinColumn(name = "device_id")
-    private Device device;
-
-    public enum Status {
-        YES,
-        NO
-    }
-
     @PrePersist
-    protected void onCreate() {
+    public void prePersist() {
         this.createdAt = LocalDateTime.now();
     }
 }

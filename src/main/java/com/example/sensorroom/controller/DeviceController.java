@@ -1,11 +1,8 @@
 package com.example.sensorroom.controller;
 
-import com.example.sensorroom.dto.device.DeviceRequest;
 import com.example.sensorroom.dto.device.DeviceResponse;
-import com.example.sensorroom.dto.device.DeviceUpdateRequest;
 import com.example.sensorroom.service.DeviceService;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
@@ -30,22 +27,5 @@ public class DeviceController {
         return ResponseEntity.ok(deviceService.getById(id));
     }
 
-    @PostMapping
-    public ResponseEntity<DeviceResponse> createDevice(@Valid @RequestBody DeviceRequest request) {
-        return ResponseEntity.ok(deviceService.create(request));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<DeviceResponse> updateDevice(
-            @PathVariable Long id,
-            @Valid @RequestBody DeviceUpdateRequest request
-    ) {
-        return ResponseEntity.ok(deviceService.update(id, request));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteDevice(@PathVariable Long id) {
-        deviceService.delete(id);
-        return ResponseEntity.noContent().build();
-    }
+    
 }
