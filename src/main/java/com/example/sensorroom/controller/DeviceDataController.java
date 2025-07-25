@@ -1,42 +1,34 @@
 package com.example.sensorroom.controller;
 
-import java.util.List;
-
+import com.example.sensorroom.dto.devicedata.DeviceDataRequest;
+import com.example.sensorroom.dto.devicedata.DeviceDataResponse;
+import com.example.sensorroom.service.DeviceDataService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.example.sensorroom.entity.DeviceData;
-import com.example.sensorroom.request.DeviceDataRequest;
-import com.example.sensorroom.service.DeviceDataService;
-
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/data")
+@RequestMapping("/api/device-data")
 @RequiredArgsConstructor
 public class DeviceDataController {
-    
+
     private final DeviceDataService deviceDataService;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<DeviceData> getData(@PathVariable Long id) {
-        return ResponseEntity.ok(deviceDataService.getData(id));
-    }
-
     @GetMapping
-    public ResponseEntity<List<DeviceData>> getAllData() {
-        return ResponseEntity.ok(deviceDataService.getAllData());
+    public ResponseEntity<List<DeviceDataResponse>> getAll() {
+        return ResponseEntity.ok(deviceDataService.getAll());
     }
 
-    @GetMapping("/classroom/{classroomId}")
-    public ResponseEntity<List<DeviceData>> getDataByClassroom(@PathVariable Long classroomId) {
-        return ResponseEntity.ok(deviceDataService.getDataByClassroom(classroomId));
+    @GetMapping("/device/{deviceId}")
+    public ResponseEntity<List<DeviceDataResponse>> getByDeviceId(@PathVariable Long deviceId) {
+        return ResponseEntity.ok(deviceDataService.getByDeviceId(deviceId));
     }
 
-    @PostMapping("/classroom/{classroomId}")
-    public ResponseEntity<DeviceData> createData(@PathVariable Long classroomId,
-                                                 @Valid @RequestBody DeviceDataRequest request) {
-        return ResponseEntity.ok(deviceDataService.createData(classroomId, request));
+    @PostMapping
+    public ResponseEntity<DeviceDataResponse> create(@Valid @RequestBody DeviceDataRequest request) {
+        return ResponseEntity.ok(deviceDataService.create(request));
     }
 }

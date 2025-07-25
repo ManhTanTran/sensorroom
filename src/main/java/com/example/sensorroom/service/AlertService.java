@@ -2,22 +2,24 @@ package com.example.sensorroom.service;
 
 import java.util.List;
 
-import com.example.sensorroom.entity.Alert;
+import com.example.sensorroom.dto.alert.AlertRequest;
+import com.example.sensorroom.dto.alert.AlertResponse;
 import com.example.sensorroom.entity.Alert.Status;
-import com.example.sensorroom.request.AlertRequest;
+import com.example.sensorroom.entity.User;
 
 public interface AlertService {
-    Alert getAlert(Long id);
 
-    List<Alert> getAllAlerts();
+    List<AlertResponse> getAll(User currentUser);
 
-    List<Alert> getAlertsByClassroom(Long classroomId);
+    AlertResponse getById(Long id, User currentUser);
 
-    List<Alert> getAlertsByResolvedStatus(Status status);
+    List<AlertResponse> getByClassroomId(Long classroomId, User currentUser);
 
-    Alert createAlert(Long classroomId, AlertRequest alertRequest);
+    List<AlertResponse> getByStatus(Status status, User currentUser);
 
-    Alert resolveAlert(Long id); 
+    AlertResponse create(AlertRequest request, User currentUser);
 
-    void deleteAlert(Long id);
+    void resolveAlert(Long id, User currentUser);
+
+    void delete(Long id, User currentUser);
 }

@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 public class Alert {
     
-     @Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -26,12 +26,21 @@ public class Alert {
 
     private LocalDateTime createdAt;
 
+    @ManyToOne
+    @JoinColumn(name = "classroom_id", nullable = false)
+    private Classroom classroom;
+
+    @ManyToOne
+    @JoinColumn(name = "device_id")
+    private Device device;
+
     public enum Status {
         YES,
         NO
     }
 
-    @ManyToOne
-    @JoinColumn(name = "classroom_id", nullable = false)
-    private Classroom classroom;
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

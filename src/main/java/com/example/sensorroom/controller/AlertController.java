@@ -1,17 +1,18 @@
 package com.example.sensorroom.controller;
 
-import java.util.List;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import com.example.sensorroom.entity.Alert;
+import com.example.sensorroom.dto.alert.AlertRequest;
+import com.example.sensorroom.dto.alert.AlertResponse;
 import com.example.sensorroom.entity.Alert.Status;
-import com.example.sensorroom.request.AlertRequest;
+import com.example.sensorroom.entity.User;
 import com.example.sensorroom.service.AlertService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/alerts")
@@ -20,40 +21,61 @@ public class AlertController {
 
     private final AlertService alertService;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Alert> getAlert(@PathVariable Long id) {
-        return ResponseEntity.ok(alertService.getAlert(id));
+    private User getCurrentUser() {
+        User user = new User();
+        user.setId(1L);
+        user.setFullName("Demo User");
+        user.setAccountType(com.example.sensorroom.entity.RoleType.ADMIN);  // hoặc USER tùy bạn
+        return user;
     }
 
     @GetMapping
-    public ResponseEntity<List<Alert>> getAllAlerts() {
-        return ResponseEntity.ok(alertService.getAllAlerts());
+    public ResponseEntity<List<AlertResponse>> getAllAlerts() {
+        User currentUser = getCurrentUser();
+        return ResponseEntity.ok(alertService.getAll(currentUser));
     }
 
-    @GetMapping("/classroom/{classroomId}")
-    public ResponseEntity<List<Alert>> getAlertsByClassroom(@PathVariable Long classroomId) {
-        return ResponseEntity.ok(alertService.getAlertsByClassroom(classroomId));
+    @GetMapping("/{id}")
+    public ResponseEntity<AlertResponse> getAlertById(@PathVariable Long id) {
+        User currentUser = getCurrentUser();
+        return ResponseEntity.ok(alertService.getById(id, currentUser));
     }
 
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<Alert>> getAlertsByStatus(@PathVariable Status status) {
-        return ResponseEntity.ok(alertService.getAlertsByResolvedStatus(status));
-    }
-
-    @PostMapping("/classroom/{classroomId}")
-    public ResponseEntity<Alert> createAlert(@PathVariable Long classroomId,
-                                             @Valid @RequestBody AlertRequest request) {
-        return ResponseEntity.ok(alertService.createAlert(classroomId, request));
+    @PostMapping
+    public ResponseEntity<AlertResponse> createAlert(@Valid @RequestBody AlertRequest request) {
+        User currentUser = getCurrentUser();
+        return ResponseEntity.ok(alertService.create(request, currentUser));
     }
 
     @PutMapping("/resolve/{id}")
-    public ResponseEntity<Alert> resolveAlert(@PathVariable Long id) {
-        return ResponseEntity.ok(alertService.resolveAlert(id));
+    public ResponseEntity<Void> resolveAlert(@PathVariable Long id) {
+        User currentUser = getCurrentUser();
+        alertService.resolveAlert(id, currentUser);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAlert(@PathVariable Long id) {
-        alertService.deleteAlert(id);
+        User currentUser = getCurrentUser();
+        alertService.delete(id, currentUser);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/classroom/{classroomId}")
+    public ResponseEntity<List<AlertResponse>> getByClassroom(@PathVariable Long classroomId) {
+        User currentUser = getCurrentUser();
+        return ResponseEntity.ok(alertService.getByClassroomId(classroomId, currentUser));
+    }
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<AlertResponse>> getByStatus(@PathVariable Status status) {
+        User currentUser = getCurrentUser();
+        return ResponseEntity.ok(alertService.getByStatus(status, currentUser));
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<List<AlertResponse>> getResolvedAlerts() {
+        User currentUser = getCurrentUser();
+        return ResponseEntity.ok(alertService.getByStatus(Status.YES, currentUser));
     }
 }
