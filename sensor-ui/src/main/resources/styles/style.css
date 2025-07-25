@@ -1,0 +1,343 @@
+/*
+ * ==========================================================================
+ *   SMART ROOM STYLESHEET - PHIÊN BẢN CHUẨN HÓA CUỐI CÙNG
+ * ==========================================================================
+ *   TÔNG MÀU: Xanh đậm chuyên nghiệp (#004A7C), Trắng & Xám
+ *   TRỌNG TÂM: Giao diện sạch sẽ, chữ và icon to, rõ ràng.
+ * ==========================================================================
+ */
+
+/* === 1. NỀN TẢNG CHUNG === */
+.root {
+    -fx-font-family: "SF Pro Display", "Segoe UI", system-ui, -apple-system, sans-serif;
+    -fx-base: #F8FAFC; /* Nền xám rất nhạt */
+    -fx-font-smoothing-type: lcd;
+}
+
+/* === 2. MÀN HÌNH ĐĂNG NHẬP === */
+.login-form-container {
+    -fx-background-color: white;
+    -fx-padding: 0 80px;
+    -fx-alignment: center;
+}
+.login-title {
+    -fx-font-size: 36px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #1D2A39;
+}
+.login-input, .password-stack-pane {
+    -fx-pref-height: 52px;
+    -fx-font-size: 16px;
+    -fx-border-color: #CBD5E1;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-background-insets: 0;
+    -fx-padding: 0 15px;
+}
+.login-input:focused, .password-stack-pane:focused-within {
+    -fx-border-color: #007BFF;
+    -fx-border-width: 2px;
+}
+.password-stack-pane .text-field {
+    -fx-border-width: 0;
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+.login-button {
+    -fx-background-color: #004A7C;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8px;
+    -fx-padding: 18 20;
+    -fx-cursor: hand;
+}
+.login-button:hover { -fx-background-color: #003356; }
+.show-password-button {
+    -fx-background-color: transparent;
+    -fx-font-size: 24px;
+    -fx-text-fill: #94A3B8;
+    -fx-cursor: hand;
+    -fx-padding: 5 12px;
+}
+
+/* === 3. GIAO DIỆN CHÍNH (HEADER, SIDEBAR) === */
+.header-pane {
+    -fx-background-color: white;
+    -fx-padding: 15px 30px;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 0 0 1px 0;
+}
+.header-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #1E293B;
+}
+.sidebar {
+    -fx-background-color: #FFFFFF;
+    -fx-padding: 20px;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 0 1px 0 0;
+}
+.sidebar-button {
+    -fx-background-color: transparent;
+    -fx-font-size: 17px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #334155;
+    -fx-background-radius: 10px;
+    -fx-padding: 15px 20px;
+    -fx-alignment: center-left;
+    -fx-cursor: hand;
+}
+.sidebar-button:hover {
+    -fx-background-color: #F1F5F9;
+    -fx-text-fill: #004A7C;
+}
+.sidebar-button:selected {
+    -fx-background-color: #004A7C;
+    -fx-text-fill: white;
+}
+.sidebar-icon {
+    -fx-font-size: 28px;
+    -fx-padding: 0 20px 0 5px;
+}
+
+/* === 4. CÁC THẺ THÔNG TIN (CARDS) === */
+.info-card {
+    -fx-background-color: white;
+    -fx-padding: 20px;
+    -fx-background-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 15, 0, 0, 4);
+}
+.info-card-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #64748B;
+}
+.info-card-value {
+    -fx-font-size: 48px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #1E293B;
+}
+.info-card-icon-region {
+    -fx-min-width: 48px;
+    -fx-min-height: 48px;
+    -fx-background-color: #CBD5E1;
+    -fx-shape: "";
+}
+
+/* === 5. BẢNG DỮ LIỆU === */
+.table-view-container {
+    -fx-background-color: white;
+    -fx-background-radius: 16px;
+    -fx-padding: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 15, 0, 0, 4);
+}
+.table-title, .chart-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #1E293B;
+}
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+}
+.table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #64748B;
+    -fx-padding: 20px;
+    -fx-border-width: 0 0 2px 0;
+    -fx-border-color: #F1F5F9;
+}
+.table-view .table-row-cell {
+    -fx-padding: 20px;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-color: #F1F5F9;
+    -fx-font-size: 15px;
+    -fx-text-fill: #1E293B;
+}
+
+/* === 6. CÁC TRẠNG THÁI CÓ MÀU TRONG BẢNG (QUAN TRỌNG) === */
+.status-label {
+    -fx-padding: 7px 15px;
+    -fx-background-radius: 20px;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.status-hoat-ong, .status-tot, .status-binh-thuong {
+    -fx-background-color: #D1FAE5; /* Nền xanh lá nhạt */
+    -fx-text-fill: #065F46; /* Chữ xanh lá đậm */
+}
+.status-tam-ngung, .status-vuot-nguong, .status-trung-binh {
+    -fx-background-color: #FEF3C7; /* Nền vàng nhạt */
+    -fx-text-fill: #92400E; /* Chữ vàng đậm */
+}
+.status-mat-ket-noi, .status-kem {
+    -fx-background-color: #FEE2E2; /* Nền đỏ nhạt */
+    -fx-text-fill: #991B1B; /* Chữ đỏ đậm */
+}
+
+/* === 7. CÁC NÚT BẤM VÀ BỘ LỌC === */
+.filter-box {
+    -fx-background-color: white;
+    -fx-padding: 20px 25px;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 0 0 1px 0;
+}
+.create-button {
+    -fx-background-color: #004A7C;
+    -fx-text-fill: white;
+    -fx-font-weight: 600;
+    -fx-font-size: 15px;
+    -fx-background-radius: 8px;
+    -fx-padding: 12px 22px;
+    -fx-cursor: hand;
+}
+.create-button:hover { -fx-background-color: #003356; }
+
+.action-button-view, .action-button-delete {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+    -fx-font-size: 28px;
+}
+.action-button-view { -fx-text-fill: #64748B; }
+.action-button-view:hover { -fx-text-fill: #004A7C; }
+
+/* === 8. BIỂU ĐỒ === */
+.chart-card {
+    -fx-background-color: white;
+    -fx-background-radius: 16px;
+    -fx-padding: 25px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 15, 0, 0, 4);
+}
+.default-color0.chart-pie { -fx-pie-color: #004A7C; }
+.default-color1.chart-pie { -fx-pie-color: #007BFF; }
+.default-color2.chart-pie { -fx-pie-color: #74B4E0; }
+.chart-pie {
+    -fx-pie-label-visible: false;
+    -fx-legend-visible: false;
+}
+.custom-legend {
+    -fx-spacing: 15px;
+    -fx-padding: 10px 0 0 0;
+}
+.custom-legend-item {
+    -fx-spacing: 12px;
+    -fx-alignment: center-left;
+}
+.custom-legend-item .color-rect {
+    -fx-width: 14px;
+    -fx-height: 14px;
+    -fx-arc-width: 4px;
+    -fx-arc-height: 4px;
+}
+.custom-legend-item .label {
+    -fx-font-size: 16px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #334155;
+}
+.chart-bar {
+    -fx-bar-fill: #004A7C;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-bar-width: 40;
+    -fx-max-height: 40px;
+ }
+
+.table-view .table-cell .status-label {
+    -fx-padding: 7px 15px;
+    -fx-background-radius: 20px;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.color-rect {
+    -fx-width: 14px;
+    -fx-height: 14px;
+    -fx-arc-width: 4px;
+    -fx-arc-height: 4px;
+}
+
+.wide-bar-chart .chart-bar {
+    -fx-bar-fill: #004A7C;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.back-button {
+    -fx-background-color: #F1F5F9; /* Nền xám nhạt */
+    -fx-text-fill: #334155; /* Chữ xám đậm */
+    -fx-font-weight: 600;
+    -fx-font-size: 15px;
+    -fx-background-radius: 8px;
+    -fx-padding: 10px 20px;
+    -fx-cursor: hand;
+}
+.back-button:hover {
+    -fx-background-color: #E2E8F0; /* Đậm hơn khi hover */
+}
+
+/* ... (Tất cả các style khác từ .root đến .chart-bar giữ nguyên) ... */
+
+/* === 9. GIAO DIỆN CHI TIẾT PHÒNG HỌC (MỚI) === */
+
+/* HBox chứa thông tin chung */
+.classroom-detail-info-box {
+    -fx-spacing: 25px; /* Dãn khoảng cách giữa các mục */
+    -fx-alignment: center-left;
+    -fx-padding: 10px 0;
+}
+
+/* Label tiêu đề (ví dụ: "Mã phòng:") */
+.info-title-label {
+    -fx-font-size: 15px;
+    -fx-text-fill: #64748B; /* Xám */
+}
+
+/* Label giá trị (ví dụ: "A302") */
+.info-value-label {
+    -fx-font-size: 15px;
+    -fx-font-weight: 600; /* Bôi đậm */
+    -fx-text-fill: #1E293B; /* Xanh đen */
+}
+
+/* Sơ đồ lớp học */
+.classroom-layout {
+    -fx-background-color: #F8FAFC; /* Nền xám nhạt */
+    -fx-border-color: #E2E8F0;
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px;
+    -fx-padding: 20px;
+}
+
+/* Các đối tượng trong sơ đồ (bàn, ghế...) */
+.classroom-object {
+    -fx-background-color: white;
+    -fx-border-color: #CBD5E1;
+    -fx-border-width: 1.5px;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+}
+.classroom-object .label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #475569;
+}
+
+/* Nút cảm biến trong sơ đồ */
+.sensor-button {
+    -fx-background-color: #004A7C;
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+    -fx-background-radius: 6px;
+    -fx-padding: 5px 10px;
+}
+.sensor-button:disabled {
+    -fx-background-color: #E2E8F0;
+    -fx-opacity: 1.0; /* Giữ cho nó rõ nét */
+}
+
+
