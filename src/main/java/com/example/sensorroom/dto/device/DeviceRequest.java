@@ -21,7 +21,7 @@ public class DeviceRequest {
     private String name;
 
     @NotBlank(message = "IMEI is required")
-    private String imei;
+    private String deviceId;
 
     @NotNull(message = "Device type is required")
     private DeviceType type;

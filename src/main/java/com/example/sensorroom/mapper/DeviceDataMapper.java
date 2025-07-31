@@ -33,7 +33,7 @@ public class DeviceDataMapper {
                 .light("LIGHT".equals(deviceType) ? data.getLight() : null)
                 .co2("CO2".equals(deviceType) ? data.getCo2() : null)
                 .createdAt(data.getCreatedAt())
-                .deviceId(device.getId())
+                .deviceId(device.getDeviceId())
                 .deviceName(device.getName())
                 .classroomId(data.getClassroom().getId())
                 .classroomName(data.getClassroom().getName())

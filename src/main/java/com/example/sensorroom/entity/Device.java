@@ -40,7 +40,7 @@ public class Device {
     private String name;
 
     @Column(name = "device_id", nullable = false)
-    private String imei;
+    private String deviceId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -14,7 +14,7 @@ public class DeviceDataResponse {
     private Double light;
     private Double co2;
     private LocalDateTime createdAt;
-    private Long deviceId;
+    private String deviceId;
     private String deviceName;
     private Long classroomId;
     private String classroomName;

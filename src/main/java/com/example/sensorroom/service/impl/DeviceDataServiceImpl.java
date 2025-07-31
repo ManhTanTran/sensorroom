@@ -39,8 +39,8 @@ public class DeviceDataServiceImpl implements DeviceDataService {
     }
 
     @Override
-    public List<DeviceDataResponse> getByDeviceId(Long deviceId) {
-        return deviceDataRepository.findByDeviceId(deviceId)
+    public List<DeviceDataResponse> getByDeviceId(String deviceId) {
+        return deviceDataRepository.findByDeviceDeviceId(deviceId)
                 .stream()
                 .map(DeviceDataMapper::toResponse)
                 .collect(Collectors.toList());
@@ -48,7 +48,8 @@ public class DeviceDataServiceImpl implements DeviceDataService {
 
     @Override
     public DeviceDataResponse create(DeviceDataRequest request) {
-        Device device = deviceRepository.findById(request.getDeviceId())
+        Long deviceId = Long.valueOf(request.getDeviceId());
+        Device device = deviceRepository.findById(deviceId)
                 .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
 
         Classroom classroom = classroomRepository.findById(request.getClassroomId())

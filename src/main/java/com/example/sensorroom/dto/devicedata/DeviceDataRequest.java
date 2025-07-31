@@ -1,5 +1,9 @@
 package com.example.sensorroom.dto.devicedata;
 
+import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
@@ -18,10 +22,14 @@ public class DeviceDataRequest {
     private Double co2;
 
     @NotNull(message = "Device ID is required")
-    private Long deviceId;
+    private String deviceId;
 
     @NotNull(message = "Classroom ID is required")
     private Long classroomId;
+
+    @JsonProperty("timestamp")
+    private LocalDateTime createdAt;
+
 
     
 }

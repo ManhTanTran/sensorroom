@@ -10,7 +10,7 @@ public interface DeviceDataService {
 
     List<DeviceDataResponse> getAll();
 
-    List<DeviceDataResponse> getByDeviceId(Long deviceId);
+    List<DeviceDataResponse> getByDeviceId(String deviceId);
 
     DeviceDataResponse create(DeviceDataRequest request);
 
