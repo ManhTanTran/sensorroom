@@ -1,7 +1,9 @@
 package com.example.smartroom.controller;
 
+import com.example.smartroom.model.Classroom;
 import com.example.smartroom.model.Role;
 import com.example.smartroom.model.User;
+import com.example.smartroom.service.DataService;
 import com.example.smartroom.service.UserSession;
 import com.example.smartroom.util.ResourceLoader;
 import com.example.smartroom.view.*;
@@ -9,13 +11,14 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 public class MainViewController {
 
@@ -64,20 +67,25 @@ public class MainViewController {
     }
 
     private HBox createHeader() {
-        HBox header = new HBox();
+        HBox header = new HBox(1000);
         header.getStyleClass().add("header-pane");
         header.setAlignment(Pos.CENTER_LEFT);
 
         Text logo = new Text("Hệ thống Sensor Room");
         logo.getStyleClass().add("header-title");
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
+        //Region spacer = new Region();
+        //HBox.setHgrow(spacer, Priority.ALWAYS);
         User currentUser = UserSession.getInstance().getUser();
-        Label userLabel = new Label("👤 " + currentUser.fullName() + " (" + currentUser.role() + ")");
+        FontIcon userIcon = new FontIcon(FontAwesomeSolid.USER);
+        userIcon.setIconSize(18);
+        userIcon.getStyleClass().add("sidebar-icon");
 
-        header.getChildren().addAll(logo, spacer, userLabel);
+        Label userLabel = new Label(currentUser.fullName() + " (" + currentUser.role() + ")", userIcon);
+        userLabel.getStyleClass().add("chart-title");
+        userLabel.setGraphicTextGap(8);
+
+        header.getChildren().addAll(logo, userLabel);
         return header;
     }
 
@@ -88,9 +96,12 @@ public class MainViewController {
 
         ToggleGroup toggleGroup = new ToggleGroup();
 
-        ToggleButton dashboardButton = createSidebarButton("📊", "Dashboard", toggleGroup);
-        ToggleButton roomsButton = createSidebarButton("🏛️", "Phòng học", toggleGroup);
-        ToggleButton devicesButton = createSidebarButton("🔌", "Thiết bị", toggleGroup);
+        ToggleButton dashboardButton = createSidebarButton(
+                new FontIcon(FontAwesomeSolid.CHART_BAR), "Dashboard", toggleGroup);
+        ToggleButton roomsButton = createSidebarButton(
+                new FontIcon(FontAwesomeSolid.UNIVERSITY), "Phòng học", toggleGroup);
+        ToggleButton devicesButton = createSidebarButton(
+                new FontIcon(FontAwesomeSolid.PLUG), "Thiết bị", toggleGroup);
 
         dashboardButton.setSelected(true);
 
@@ -102,24 +113,68 @@ public class MainViewController {
         return sideBar;
     }
 
-    private ToggleButton createSidebarButton(String iconText, String buttonText, ToggleGroup group) {
-        Label icon = new Label(iconText);
+    private ToggleButton createSidebarButton(FontIcon icon, String buttonText, ToggleGroup group) {
+        icon.setIconSize(18);
         icon.getStyleClass().add("sidebar-icon");
+        icon.setIconColor(Color.web("#334155")); // default màu đen
 
-        ToggleButton button = new ToggleButton(buttonText);
-        button.setGraphic(icon);
+        Label label = new Label(buttonText);
+        label.getStyleClass().add("sidebar-text");
+        label.setFont(Font.font(16));
+        label.setTextFill(Color.web("#334155")); // default màu đen
+
+        HBox content = new HBox(10, icon, label);
+        content.setAlignment(Pos.CENTER_LEFT);
+
+        ToggleButton button = new ToggleButton();
+        button.setGraphic(content);
         button.setToggleGroup(group);
         button.getStyleClass().add("sidebar-button");
         button.setMaxWidth(Double.MAX_VALUE);
+
+        // Gán icon và label vào UserData để dễ xử lý màu
+        button.setUserData(new Object[]{icon, label});
+
+        // Lắng nghe toggle thay đổi để đổi màu icon/text
+        button.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
+            FontIcon fi = ((FontIcon) ((Object[]) button.getUserData())[0]);
+            Label lb = ((Label) ((Object[]) button.getUserData())[1]);
+
+            if (isNowSelected) {
+                fi.setIconColor(Color.WHITE);
+                lb.setTextFill(Color.WHITE);
+            } else {
+                fi.setIconColor(Color.web("#334155")); // màu gốc
+                lb.setTextFill(Color.web("#334155"));
+            }
+        });
+
         return button;
     }
+
 
     private Node createDashboardView() {
         User currentUser = UserSession.getInstance().getUser();
         if (currentUser.role() == Role.ADMIN) {
             return new AdminDashboardView().getView();
-        } else {
-            return new KtvDashboardView().getView();
+        } else { // KTV
+            // KIỂM TRA SỐ LƯỢNG PHÒNG KTV QUẢN LÝ
+            if (currentUser.managedRooms().size() > 1) {
+                // KTV quản lý nhiều phòng
+                return new KtvDashboardView().getView();
+            } else {
+                // KTV quản lý 1 phòng
+                // Lấy thông tin phòng duy nhất đó
+                Classroom singleRoom = DataService.getAllClassrooms().stream()
+                        .filter(c -> currentUser.managedRooms().get(0).equals(c.getId()))
+                        .findFirst().orElse(null);
+
+                if (singleRoom != null) {
+                    return new KtvSingleRoomDashboardView(singleRoom).getView();
+                } else {
+                    return new Label("Lỗi: Không tìm thấy thông tin phòng học.");
+                }
+            }
         }
     }
 }

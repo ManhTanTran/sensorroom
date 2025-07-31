@@ -1,5 +1,6 @@
 package com.example.smartroom.view;
 
+import com.example.smartroom.model.Classroom;
 import com.example.smartroom.model.Device;
 import com.example.smartroom.model.User;
 import com.example.smartroom.service.DataService;
@@ -7,98 +8,135 @@ import com.example.smartroom.service.UserSession;
 import javafx.beans.binding.Bindings;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import org.kordamp.ikonli.javafx.FontIcon;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 public class KtvDashboardView {
-    // Helper để tái sử dụng các phương thức TẠO THÀNH PHẦN từ AdminDashboardView
+
     private final AdminDashboardView adminViewHelper = new AdminDashboardView();
+    private StackPane contentPane;
 
     public Node getView() {
-        // Sử dụng ScrollPane để đảm bảo không bao giờ bị tràn
-        ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        contentPane = new StackPane();
+        showMultiRoomDashboard();
+        return contentPane;
+    }
 
-        // Layout chính là một VBox, chứa 2 HBox lớn (y hệt AdminDashboardView)
-        VBox mainLayout = new VBox(30);
-        mainLayout.setPadding(new Insets(30));
+    private void showMultiRoomDashboard() {
+        VBox multiRoomView = new VBox(30);
+        multiRoomView.setPadding(new Insets(30));
 
-        // Lấy danh sách thiết bị GỐC và tạo danh sách đã lọc cho KTV
-        ObservableList<Device> masterDeviceList = DataService.getAllDevices();
         User currentUser = UserSession.getInstance().getUser();
-        ObservableList<Device> ktvDeviceList = masterDeviceList.filtered(
-                d -> currentUser.managedRooms().contains(d.getRoom())
+
+        // Lấy danh sách gốc và tạo danh sách đã lọc một cách an toàn
+        ObservableList<Device> allDevices = DataService.getAllDevices();
+        ObservableList<Classroom> allClassrooms = DataService.getAllClassrooms();
+
+        // SỬA LỖI LOGIC TẠI ĐÂY: Thêm kiểm tra null cho device.getRoom()
+        ObservableList<Device> ktvDevices = allDevices.filtered(
+                device -> device.getRoom() != null && currentUser.managedRooms().contains(device.getRoom())
+        );
+        ObservableList<Classroom> managedClassrooms = allClassrooms.filtered(
+                classroom -> currentUser.managedRooms().contains(classroom.getId())
         );
 
-        // --- 1. HBOX TRÊN CÙNG ---
+        // --- HBOX TRÊN CÙNG ---
         HBox topSection = new HBox(30);
 
-        // 1a. VBOX BÊN TRÁI chứa các thẻ thông tin
-        VBox leftCardsPanel = createLeftCardsPanel(ktvDeviceList, currentUser);
+        VBox leftCardsPanel = createLeftCardsPanel(ktvDevices, managedClassrooms);
 
-        // 1b. PIE CHART BÊN PHẢI (SỬ DỤNG LẠI PHƯƠNG THỨC MỚI)
-        // KTV cũng cần xem phân bố chất lượng phòng họ quản lý
-        Node pieChart = adminViewHelper.createRoomQualityPieChart(); // SỬ DỤNG ĐÚNG PHƯƠNG THỨC MỚI
+        Node pieChart = adminViewHelper.createRoomQualityPieChart(managedClassrooms);
 
         topSection.getChildren().addAll(leftCardsPanel, pieChart);
         HBox.setHgrow(leftCardsPanel, Priority.ALWAYS);
 
-        // --- 2. HBOX DƯỚI CÙNG ---
+        // --- HBOX DƯỚI CÙNG ---
         HBox bottomSection = new HBox(30);
-
-        // Tái sử dụng các biểu đồ từ AdminDashboardView
-        Node topRoomsChart = adminViewHelper.createTopQualityRoomsChart();
-        Node mostAlertsChart = adminViewHelper.createMostAlertsRoomsChart();
-        Node alertsByTypeChart = adminViewHelper.createAlertsByTypePieChart(); // BIỂU ĐỒ MỚI
+        Node topRoomsChart = adminViewHelper.createTopQualityRoomsChart(managedClassrooms);
+        Node mostAlertsChart = adminViewHelper.createMostAlertsRoomsChart(managedClassrooms);
+        Node alertsByTypeChart = adminViewHelper.createAlertsByTypeDonutChart();
 
         bottomSection.getChildren().addAll(topRoomsChart, mostAlertsChart, alertsByTypeChart);
         bottomSection.getChildren().forEach(c -> HBox.setHgrow(c, Priority.ALWAYS));
 
-        // Thêm 2 HBox lớn vào VBox chính
-        mainLayout.getChildren().addAll(topSection, bottomSection);
+        multiRoomView.getChildren().addAll(topSection, bottomSection);
         VBox.setVgrow(bottomSection, Priority.ALWAYS);
 
-        scrollPane.setContent(mainLayout);
-        return scrollPane;
+        contentPane.getChildren().setAll(multiRoomView);
     }
 
-    private VBox createLeftCardsPanel(ObservableList<Device> ktvDeviceList, User currentUser) {
+    private VBox createLeftCardsPanel(ObservableList<Device> ktvDevices, ObservableList<Classroom> managedClassrooms) {
         VBox container = new VBox(20);
+        container.setPrefWidth(750);
 
-        // HBox con 1: 3 thẻ
         HBox topRowCards = new HBox(20);
-        Node deviceCard = createDynamicInfoCard(Bindings.size(ktvDeviceList).asString(), "Tổng cảm biến", "M5...z");
-        // Hiển thị số lượng phòng thay vì danh sách dài
-        Node roomCard = adminViewHelper.createInfoCard(String.valueOf(currentUser.managedRooms().size()), "Tổng phòng", "M16...H16z");
-        // KTV không có tổng cảnh báo, thay bằng thẻ trạng thái chung
-        Node statusCard = adminViewHelper.createInfoCard("Tốt", "Trạng thái chung", "M11...z");
-        topRowCards.getChildren().addAll(deviceCard, roomCard, statusCard);
+        Node deviceCard = adminViewHelper.createDynamicInfoCard(Bindings.size(ktvDevices).asString(), "Tổng cảm biến");
+        Node roomCard = adminViewHelper.createDynamicInfoCard(Bindings.size(managedClassrooms).asString(), "Tổng phòng");
+        Node alertCard = adminViewHelper.createInfoCard(String.valueOf(DataService.getAlertHistory().size()), "Tổng cảnh báo");
+        topRowCards.getChildren().addAll(deviceCard, roomCard, alertCard);
         topRowCards.getChildren().forEach(c -> HBox.setHgrow(c, Priority.ALWAYS));
 
-        // HBox con 2: 4 thẻ
         HBox bottomRowCards = new HBox(20);
         bottomRowCards.getChildren().addAll(
-                adminViewHelper.createInfoCard("800", "CO2 (ppm)", "M1...z"),
-                adminViewHelper.createInfoCard("50", "Độ ẩm (%)", "M12...18.01z"),
-                adminViewHelper.createInfoCard("25", "Nhiệt độ (°C)", "M15...19z"),
-                adminViewHelper.createInfoCard("350", "Ánh sáng (lux)", "M12...5z")
+                adminViewHelper.createInfoCard("--", "CO2 (ppm)"),
+                adminViewHelper.createInfoCard("--", "Độ ẩm (%)"),
+                adminViewHelper.createInfoCard("--", "Nhiệt độ (°C)"),
+                adminViewHelper.createInfoCard("--", "Ánh sáng (lux)")
         );
         bottomRowCards.getChildren().forEach(c -> HBox.setHgrow(c, Priority.ALWAYS));
 
-        container.getChildren().addAll(topRowCards, bottomRowCards);
+        ComboBox<Classroom> roomSelector = new ComboBox<>(managedClassrooms);
+        roomSelector.setPromptText("Chọn phòng để xem chi tiết...");
+        roomSelector.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(Classroom c) { return c == null ? "" : c.getId(); }
+            @Override public Classroom fromString(String s) { return null; }
+        });
+        roomSelector.setOnAction(e -> {
+            Classroom selected = roomSelector.getValue();
+            if (selected != null) {
+                showSingleRoomDashboard(selected);
+            }
+        });
+
+        Label valueLabel = new Label("Chất lượng môi trường:");
+        valueLabel.getStyleClass().add("chart-title");
+        HBox filterBox = new HBox(20, valueLabel, roomSelector);
+        filterBox.setPadding(new Insets(10, 0, 0, 0));
+
+        container.getChildren().addAll(topRowCards, filterBox, bottomRowCards);
         return container;
     }
 
-    private Node createDynamicInfoCard(javafx.beans.value.ObservableStringValue valueProperty, String title, String svgPath) {
-        Node card = adminViewHelper.createInfoCard("", title, svgPath);
-        Label valueLabel = (Label) ((VBox) ((BorderPane) card).getLeft()).getChildren().get(1);
-        valueLabel.textProperty().bind(valueProperty);
-        return card;
+    private void showSingleRoomDashboard(Classroom room) {
+        KtvSingleRoomDashboardView singleView = new KtvSingleRoomDashboardView(room);
+
+        FontIcon backIcon = new FontIcon(FontAwesomeSolid.ARROW_LEFT);
+        backIcon.setIconSize(16);
+        backIcon.setIconColor(Color.BLACK); // hoặc #334155 nếu dùng nền sáng
+
+        Label backLabel = new Label("Quay lại tổng quan");
+        backLabel.setTextFill(Color.BLACK); // đổi màu theo background bạn dùng
+        backLabel.setFont(Font.font(14));
+
+        HBox backContent = new HBox(8, backIcon, backLabel);
+        backContent.setAlignment(Pos.CENTER_LEFT);
+        Button backButton = new Button();
+        backButton.setGraphic(backContent);
+
+        backButton.getStyleClass().add("back-button");
+        backButton.setOnAction(e -> showMultiRoomDashboard());
+
+        VBox container = new VBox(20, backButton, singleView.getView());
+        container.setPadding(new Insets(30));
+
+        contentPane.getChildren().setAll(container);
     }
 }

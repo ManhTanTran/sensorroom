@@ -8,6 +8,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -27,9 +28,9 @@ public class ClassroomDetailView {
      * Phương thức này giờ đây trả về một VBox chứa các thành phần CHÍNH của view chi tiết.
      */
     public Parent getContent() {
-        VBox layout = new VBox(20);
+        VBox layout = new VBox(10);
 
-        Label measurementLabel = createHeaderLabel("Thông số đo 5 lần gần nhất của phòng");
+        Label measurementLabel = createHeaderLabel("Thông số đo 3 lần gần nhất của phòng");
         TableView<ClassroomMeasurement> measurementTable = new TableView<>(DataService.getRoomMeasurements());
         setupMeasurementTable(measurementTable);
 
@@ -37,9 +38,7 @@ public class ClassroomDetailView {
 
         List<Device> devicesInThisRoom = DataService.getDevicesByRoomId(classroom.getId());
 
-        // ====================================================================
-        //   SỬA LỖI LOGIC TẠI ĐÂY
-        // ====================================================================
+
         Node classroomLayout;
         // Kiểm tra giá trị của thuộc tính roomType, không phải một chuỗi cố định
         if ("Phòng Lab".equals(classroom.roomTypeProperty().get())) {
@@ -47,10 +46,14 @@ public class ClassroomDetailView {
         } else {
             classroomLayout = ClassroomLayouts.createRegularClassroomLayout(devicesInThisRoom);
         }
-        // ====================================================================
 
         layout.getChildren().addAll(measurementLabel, measurementTable, layoutLabel, classroomLayout);
-        return layout;
+        ScrollPane scrollPane = new ScrollPane(layout);
+        scrollPane.setFitToWidth(true); // ← tự kéo giãn theo chiều ngang
+        scrollPane.setStyle("-fx-background-color:transparent;"); // ← không viền khó chịu
+        scrollPane.setPadding(new Insets(0, 20, 0, 0)); // ← tuỳ chỉnh nếu muốn thoáng bên phải
+
+        return scrollPane;
     }
 
     /**

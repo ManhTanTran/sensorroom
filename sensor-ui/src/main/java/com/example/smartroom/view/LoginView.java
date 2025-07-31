@@ -17,6 +17,9 @@ import javafx.stage.Stage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.URL;
+import org.kordamp.ikonli.javafx.FontIcon;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+
 
 public class LoginView {
 
@@ -67,7 +70,10 @@ public class LoginView {
 
         passwordStackPane.getChildren().addAll(passwordField, visiblePasswordField);
 
-        Button showPasswordButton = new Button("👁️");
+        Button showPasswordButton = new Button();
+        FontIcon eyeIcon = new FontIcon(FontAwesomeSolid.EYE);
+        eyeIcon.setIconSize(16);
+        showPasswordButton.setGraphic(eyeIcon);
         showPasswordButton.getStyleClass().add("show-password-button");
 
         HBox passwordWrapper = new HBox(passwordStackPane, showPasswordButton);

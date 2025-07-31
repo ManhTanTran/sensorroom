@@ -14,9 +14,11 @@
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/view/AdminDashboardView.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/view/ClassroomCreationView.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/view/ClassroomDetailView.java
+/Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/view/ClassroomEditView.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/view/ClassroomLayouts.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/view/ClassroomManagementView.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/view/DeviceManagementView.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/view/KtvDashboardView.java
+/Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/view/KtvSingleRoomDashboardView.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/view/LoginView.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/view/ViewHelper.java

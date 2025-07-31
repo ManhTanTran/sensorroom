@@ -5,6 +5,8 @@ import com.example.smartroom.model.Role;
 import com.example.smartroom.model.User;
 import com.example.smartroom.service.DataService;
 import com.example.smartroom.service.UserSession;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
@@ -19,28 +21,62 @@ import javafx.scene.layout.VBox;
 
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.kordamp.ikonli.javafx.FontIcon;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import javafx.scene.paint.Color;
+
 
 public class DeviceManagementView {
+
+    private final int ROWS_PER_PAGE = 10;
+    private TableView<Device> deviceTable;
+    private FilteredList<Device> filteredData;
 
     public Node getView() {
         VBox layout = new VBox(20);
         layout.setPadding(new Insets(10, 0, 0, 0));
 
         User currentUser = UserSession.getInstance().getUser();
-
         ObservableList<Device> deviceData = (currentUser.role() == Role.ADMIN)
                 ? DataService.getAllDevices()
                 : DataService.getDevicesForKtv(currentUser.managedRooms());
 
-        FilteredList<Device> filteredData = new FilteredList<>(deviceData, p -> true);
+        filteredData = new FilteredList<>(deviceData, p -> true);
 
         HBox topBox = createTopBox(deviceData, filteredData);
-        TableView<Device> deviceTable = createDeviceTable(filteredData, deviceData);
+
+        deviceTable = new TableView<>();
         VBox.setVgrow(deviceTable, Priority.ALWAYS);
-        Pagination pagination = new Pagination(10, 0);
+        createDeviceTableColumns(deviceTable, deviceData);
+
+        Pagination pagination = new Pagination();
+
+        filteredData.addListener((ListChangeListener.Change<? extends Device> c) ->
+                updatePaginationCount(pagination, filteredData)
+        );
+        updatePaginationCount(pagination, filteredData);
+
+        pagination.setPageFactory(this::createPage);
 
         layout.getChildren().addAll(topBox, deviceTable, pagination);
         return layout;
+    }
+
+    private void updatePaginationCount(Pagination pagination, FilteredList<Device> data) {
+        int pageCount = (int) Math.ceil((double) data.size() / ROWS_PER_PAGE);
+        pagination.setPageCount(Math.max(1, pageCount));
+        if (pagination.getCurrentPageIndex() >= pageCount && pageCount > 0) {
+            pagination.setCurrentPageIndex(pageCount - 1);
+        }
+    }
+
+    private Node createPage(int pageIndex) {
+        int fromIndex = pageIndex * ROWS_PER_PAGE;
+        int toIndex = Math.min(fromIndex + ROWS_PER_PAGE, filteredData.size());
+        if (fromIndex <= toIndex) {
+            deviceTable.setItems(FXCollections.observableArrayList(filteredData.subList(fromIndex, toIndex)));
+        }
+        return new VBox();
     }
 
     private HBox createTopBox(ObservableList<Device> sourceData, FilteredList<Device> filteredData) {
@@ -60,10 +96,12 @@ public class DeviceManagementView {
         ComboBox<String> roomFilter = new ComboBox<>();
         roomFilter.setPromptText("Phòng học");
         roomFilter.getItems().add("Tất cả");
-        roomFilter.getItems().addAll(sourceData.stream().map(Device::getRoom).distinct().sorted().collect(Collectors.toList()));
+        roomFilter.getItems().addAll(sourceData.stream().map(Device::getRoom).filter(java.util.Objects::nonNull).distinct().sorted().collect(Collectors.toList()));
         roomFilter.setValue("Tất cả");
 
-        Button searchButton = new Button("🔍 Tìm kiếm");
+        FontIcon searchIcon = new FontIcon(FontAwesomeSolid.SEARCH);
+        searchIcon.setIconSize(14);
+        Button searchButton = new Button("", searchIcon);
         searchButton.getStyleClass().add("search-button");
 
         Region spacer = new Region();
@@ -79,20 +117,14 @@ public class DeviceManagementView {
             filteredData.setPredicate(device -> {
                 boolean imeiMatch = imeiValue.isEmpty() || device.imeiProperty().get().toLowerCase().contains(imeiValue);
                 boolean typeMatch = typeValue == null || typeValue.equals("Tất cả") || device.getType().equals(typeValue);
-                boolean roomMatch = roomValue == null || roomValue.equals("Tất cả") || device.getRoom().equals(roomValue);
+                boolean roomMatch = roomValue == null || roomValue.equals("Tất cả") || (device.getRoom() != null && device.getRoom().equals(roomValue));
                 return imeiMatch && typeMatch && roomMatch;
             });
-
-            if (filteredData.isEmpty()) {
-                new Alert(Alert.AlertType.INFORMATION, "Không tìm thấy thiết bị nào phù hợp.").show();
-            }
         });
         return filterBox;
     }
 
-    private TableView<Device> createDeviceTable(FilteredList<Device> filteredData, ObservableList<Device> sourceList) {
-        TableView<Device> table = new TableView<>(filteredData);
-
+    private void createDeviceTableColumns(TableView<Device> table, ObservableList<Device> sourceList) {
         TableColumn<Device, String> sttCol = new TableColumn<>("STT");
         sttCol.setCellValueFactory(new PropertyValueFactory<>("id"));
 
@@ -105,7 +137,6 @@ public class DeviceManagementView {
         TableColumn<Device, String> roomCol = new TableColumn<>("Phòng học");
         roomCol.setCellValueFactory(new PropertyValueFactory<>("room"));
 
-        // CỘT DỮ LIỆU ĐÃ ĐƯỢC THÊM LẠI
         TableColumn<Device, String> valueCol = new TableColumn<>("Thông số gần nhất");
         valueCol.setCellValueFactory(new PropertyValueFactory<>("value"));
 
@@ -116,12 +147,18 @@ public class DeviceManagementView {
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
         statusCol.setCellFactory(ViewHelper.createStyledCellFactory("status-"));
 
-        // CHỨC NĂNG XÓA ĐÃ ĐƯỢC KHÔI PHỤC
         TableColumn<Device, Void> actionCol = new TableColumn<>("Thao tác");
         actionCol.setCellFactory(param -> new TableCell<>() {
-            private final Button deleteBtn = new Button("🗑️");
+            private final Button deleteBtn = new Button();
+
             {
-                deleteBtn.getStyleClass().add("action-button-delete");
+                FontIcon trashIcon = new FontIcon(FontAwesomeSolid.TRASH);
+                trashIcon.setIconSize(16);
+                trashIcon.setIconColor(Color.web("#DC2626"));
+
+                deleteBtn.setGraphic(trashIcon);
+                deleteBtn.getStyleClass().add("icon-button");
+
                 deleteBtn.setOnAction(event -> {
                     Device device = getTableView().getItems().get(getIndex());
 
@@ -141,11 +178,16 @@ public class DeviceManagementView {
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
                 setGraphic(empty ? null : deleteBtn);
+                setAlignment(Pos.CENTER);
             }
         });
 
-        table.getColumns().setAll(sttCol, imeiCol, typeCol, roomCol, valueCol, lastActiveCol, statusCol, actionCol);
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        return table;
+        table.getColumns().setAll(
+                sttCol, imeiCol, typeCol, roomCol, valueCol,
+                lastActiveCol, statusCol, actionCol
+        );
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+        table.getStyleClass().add("table-cell");
     }
+
 }

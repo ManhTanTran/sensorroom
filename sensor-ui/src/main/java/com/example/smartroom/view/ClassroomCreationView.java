@@ -3,15 +3,19 @@ package com.example.smartroom.view;
 import com.example.smartroom.model.Classroom;
 import com.example.smartroom.model.Device;
 import com.example.smartroom.service.DataService;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.util.StringConverter;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ClassroomCreationView {
 
@@ -55,21 +59,49 @@ public class ClassroomCreationView {
         ComboBox<String> typeCombo = new ComboBox<>();
         typeCombo.getItems().addAll("Phòng học", "Phòng Lab");
         typeCombo.getSelectionModel().selectFirst();
+        ComboBox<Device> tempSensorCombo = createSensorComboBox("Cảm biến nhiệt độ");
+        ComboBox<Device> humiditySensorCombo = createSensorComboBox("Cảm biến độ ẩm");
+        ComboBox<Device> lightSensorCombo = createSensorComboBox("Cảm biến ánh sáng");
+        ComboBox<Device> co2SensorCombo = createSensorComboBox("Cảm biến CO2");
 
-        inputGrid.add(new Label("Mã phòng học *"), 0, 0); inputGrid.add(idField, 1, 0);
-        inputGrid.add(new Label("Số phòng *"), 0, 1); inputGrid.add(numberField, 1, 1);
-        inputGrid.add(new Label("Tòa nhà *"), 0, 2); inputGrid.add(buildingCombo, 1, 2);
-        inputGrid.add(new Label("Tầng *"), 0, 3); inputGrid.add(floorCombo, 1, 3);
-        inputGrid.add(new Label("Loại phòng học *"), 2, 0); inputGrid.add(typeCombo, 3, 0);
+        inputGrid.add(new Label("Mã phòng học *"), 0, 0);
+        inputGrid.add(idField, 1, 0);
+        inputGrid.add(new Label("Số phòng *"), 0, 1);
+        inputGrid.add(numberField, 1, 1);
+        inputGrid.add(new Label("Tòa nhà *"), 0, 2);
+        inputGrid.add(buildingCombo, 1, 2);
+        inputGrid.add(new Label("Tầng *"), 0, 3);
+        inputGrid.add(floorCombo, 1, 3);
+        inputGrid.add(new Label("Loại phòng học *"), 2, 0);
+        inputGrid.add(typeCombo, 3, 0);
+        inputGrid.add(new Label("Nhiệt độ"), 4, 0);
+        inputGrid.add(tempSensorCombo, 5, 0);
+        inputGrid.add(new Label("Độ ẩm"), 6, 0);
+        inputGrid.add(humiditySensorCombo, 7, 0);
+        inputGrid.add(new Label("Ánh sáng"), 4, 1);
+        inputGrid.add(lightSensorCombo, 5, 1);
+        inputGrid.add(new Label("CO2"), 6, 1);
+        inputGrid.add(co2SensorCombo, 7, 1);
 
-        inputGrid.add(new Label("Ghi chú"), 2, 1);
-        TextArea notesArea = new TextArea();
-        notesArea.setPrefRowCount(5);
-        GridPane.setColumnSpan(notesArea, 2);
-        GridPane.setRowSpan(notesArea, 3);
-        inputGrid.add(notesArea, 3, 1);
+
+        inputGrid.add(new Label("Ghi chú"), 2, 2);
+        TextField notesArea = new TextField();
+        notesArea.setMinHeight(50);
+        inputGrid.add(notesArea, 3, 2);
 
         StackPane layoutContainer = new StackPane();
+        Runnable updateSensorButtons = () -> {
+            List<Device> selectedDevices = new ArrayList<>();
+            if (tempSensorCombo.getValue() != null) selectedDevices.add(tempSensorCombo.getValue());
+            if (humiditySensorCombo.getValue() != null) selectedDevices.add(humiditySensorCombo.getValue());
+            if (lightSensorCombo.getValue() != null) selectedDevices.add(lightSensorCombo.getValue());
+            if (co2SensorCombo.getValue() != null) selectedDevices.add(co2SensorCombo.getValue());
+
+            Node newLayout = "Phòng Lab".equals(typeCombo.getValue())
+                    ? ClassroomLayouts.createLabClassroomLayout(selectedDevices)
+                    : ClassroomLayouts.createRegularClassroomLayout(selectedDevices);
+            layoutContainer.getChildren().setAll(newLayout);
+        };
         layoutContainer.getChildren().add(ClassroomLayouts.createRegularClassroomLayout(new ArrayList<>()));
 
         typeCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
@@ -81,8 +113,21 @@ public class ClassroomCreationView {
             }
         });
 
-        content.getChildren().addAll(new Label("Thông tin chung"), inputGrid, new Separator(), new Label("Sơ đồ mô phỏng phòng học"), layoutContainer);
-        mainLayout.setCenter(content);
+        typeCombo.setOnAction(e -> updateSensorButtons.run());
+        tempSensorCombo.setOnAction(e -> updateSensorButtons.run());
+        humiditySensorCombo.setOnAction(e -> updateSensorButtons.run());
+        lightSensorCombo.setOnAction(e -> updateSensorButtons.run());
+        co2SensorCombo.setOnAction(e -> updateSensorButtons.run());
+
+        Label inputLabel = createHeaderLabel("Thông tin chung");
+        Label layoutLabel = createHeaderLabel("Sơ đồ mô phỏng phòng học");
+        content.getChildren().addAll(inputLabel, inputGrid, new Separator(), layoutLabel, layoutContainer);
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPadding(new Insets(10, 0, 10, 0));
+        scrollPane.setStyle("-fx-background-color: transparent;");
+
+        mainLayout.setCenter(scrollPane);
         BorderPane.setMargin(content, new Insets(20, 0, 0, 0));
 
         // --- LOGIC LƯU TRỮ (ĐÃ SỬA) ---
@@ -110,6 +155,18 @@ public class ClassroomCreationView {
 
             // THÊM VÀO DANH SÁCH GỐC
             DataService.addClassroom(newClassroom);
+            /*
+            if (tempSensorCombo.getValue() != null) tempSensorCombo.getValue().roomProperty().set(id);
+            if (humiditySensorCombo.getValue() != null) humiditySensorCombo.getValue().roomProperty().set(id);
+            if (lightSensorCombo.getValue() != null) lightSensorCombo.getValue().roomProperty().set(id);
+            if (co2SensorCombo.getValue() != null) co2SensorCombo.getValue().roomProperty().set(id);
+            */
+            updateDevice(tempSensorCombo.getValue(), id);
+            updateDevice(humiditySensorCombo.getValue(), id);
+            updateDevice(lightSensorCombo.getValue(), id);
+            updateDevice(co2SensorCombo.getValue(), id);
+
+
 
             new Alert(Alert.AlertType.INFORMATION, "Đã tạo phòng học mới thành công!").show();
 
@@ -118,5 +175,34 @@ public class ClassroomCreationView {
         });
 
         return mainLayout;
+    }
+
+    private ComboBox<Device> createSensorComboBox(String type) {
+        ComboBox<Device> comboBox = new ComboBox<>();
+        comboBox.setPromptText("Chọn thiết bị");
+        ObservableList<Device> availableDevices = DataService.getAllDevices().filtered(
+                d -> d.getRoom() == null && type.equals(d.getType())
+        );
+        comboBox.setItems(availableDevices);
+
+        comboBox.setConverter(new StringConverter<>() {
+            @Override public String toString(Device device) { return device == null ? "" : device.imeiProperty().get(); }
+            @Override public Device fromString(String string) { return null; }
+        });
+
+        return comboBox;
+    }
+
+    private void updateDevice(Device device, String roomId) {
+        if (device != null) {
+            device.roomProperty().set(roomId);
+            device.statusProperty().set("Hoạt động");
+        }
+    }
+
+    private Label createHeaderLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("table-title");
+        return label;
     }
 }

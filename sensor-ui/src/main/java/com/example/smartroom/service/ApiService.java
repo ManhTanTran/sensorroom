@@ -1,4 +1,4 @@
-/*
+
 package com.example.smartroom.service;
 
 
@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
 
 
 public class ApiService {
-    private static final String BASE_URL = "http://your-backend-api.com/api";
+    private static final String BASE_URL = "http://localhost:8080/swagger-ui/index.html#/";
 
     private final HttpClient client = HttpClient.newHttpClient();
 
@@ -83,4 +83,3 @@ public class ApiService {
         }
     }
 }
-*/

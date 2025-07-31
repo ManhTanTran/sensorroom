@@ -2,6 +2,7 @@ package com.example.smartroom.model;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 
 public class Classroom {
@@ -39,6 +40,20 @@ public class Classroom {
                         (int) masterDeviceList.stream().filter(d -> this.getId().equals(d.getRoom())).count(),
                 masterDeviceList // Lắng nghe sự thay đổi trên danh sách này
         ));
+        /*
+        this.deviceCount = new ReadOnlyIntegerWrapper();
+        // Tạo một listener để tính toán lại mỗi khi danh sách thiết bị thay đổi
+        ListChangeListener<Device> listener = change -> {
+            long count = masterDeviceList.stream().filter(d -> this.getId().equals(d.getRoom())).count();
+            this.deviceCount.set((int) count);
+        };
+
+        // Gán listener và tính toán lần đầu
+        masterDeviceList.addListener(listener);
+        // Kích hoạt tính toán ban đầu
+        long initialCount = masterDeviceList.stream().filter(d -> this.getId().equals(d.getRoom())).count();
+        this.deviceCount.set((int) initialCount);
+        */
     }
 
     public ReadOnlyIntegerProperty deviceCountProperty() { return deviceCount.getReadOnlyProperty(); }
