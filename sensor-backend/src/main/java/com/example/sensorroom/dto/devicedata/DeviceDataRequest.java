@@ -21,8 +21,8 @@ public class DeviceDataRequest {
 
     private Double co2;
 
-    @NotNull(message = "Device ID is required")
-    private String deviceId;
+    @NotNull(message = "Device Code is required")
+    private String deviceCode;
 
     @NotNull(message = "Classroom ID is required")
     private Long classroomId;

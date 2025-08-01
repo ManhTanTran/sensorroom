@@ -20,8 +20,8 @@ public class DeviceRequest {
     @NotBlank(message = "Device name is required")
     private String name;
 
-    @NotBlank(message = "IMEI is required")
-    private String deviceId;
+    @NotBlank(message = "Device Code is required")
+    private String deviceCode;
 
     @NotNull(message = "Device type is required")
     private DeviceType type;

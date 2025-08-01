@@ -13,7 +13,7 @@ public class DeviceMapper {
     public static Device toEntity(DeviceRequest request, User createdBy, Classroom classroom) {
         return Device.builder()
                 .name(request.getName())
-                .deviceId(request.getDeviceId())
+                .deviceCode(request.getDeviceCode())
                 .type(request.getType())
                 .status(request.getStatus())
                 .dataCycle(request.getDataCycle())
@@ -27,7 +27,7 @@ public class DeviceMapper {
     public static DeviceResponse toResponse(Device device) {
         return DeviceResponse.builder()
             .id(device.getId())
-            .deviceId(device.getDeviceId())
+            .deviceCode(device.getDeviceCode())
             .name(device.getName())
             .type(device.getType())
             .status(device.getStatus())

@@ -15,7 +15,7 @@ public class DeviceResponse {
     private String classroomName;
     private String createdByName;
     private String name;
-    private String deviceId;
+    private String deviceCode;
     private DeviceType type;
     private DeviceStatus status;
     private Integer dataCycle;

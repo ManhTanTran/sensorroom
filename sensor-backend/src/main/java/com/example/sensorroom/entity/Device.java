@@ -39,8 +39,10 @@ public class Device {
     @Column(name = "device_name", nullable = false)
     private String name;
 
-    @Column(name = "device_id", nullable = false)
-    private String deviceId;
+    @Column(name = "device_code", nullable = false)
+    private String deviceCode;
+
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

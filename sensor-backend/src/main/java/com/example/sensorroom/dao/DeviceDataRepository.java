@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface DeviceDataRepository extends JpaRepository<DeviceData, Long> {
-    List<DeviceData> findByDeviceDeviceId(String deviceId);
+    List<DeviceData> findByDeviceDeviceCode(String deviceCode);
 
     List<Device> findByDeviceType(DeviceType deviceType);
 }

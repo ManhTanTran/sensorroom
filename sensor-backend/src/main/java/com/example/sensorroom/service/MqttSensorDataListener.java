@@ -45,7 +45,7 @@ public class MqttSensorDataListener {
                 // Parse JSON
                 DeviceDataRequest req = objectMapper.readValue(payload, DeviceDataRequest.class);
 
-                var deviceOpt = deviceRepository.findByDeviceId(req.getDeviceId());
+                var deviceOpt = deviceRepository.findByDeviceCode(req.getDeviceCode());
                 var classroomOpt = classroomRepository.findById(req.getClassroomId());
 
                 if (deviceOpt.isEmpty() || classroomOpt.isEmpty()) {

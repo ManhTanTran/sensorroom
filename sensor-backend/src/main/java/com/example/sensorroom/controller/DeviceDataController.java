@@ -23,9 +23,10 @@ public class DeviceDataController {
     }
 
     @GetMapping("/device/{deviceId}")
-    public ResponseEntity<List<DeviceDataResponse>> getByDeviceId(@PathVariable String deviceId) {
+    public ResponseEntity<List<DeviceDataResponse>> getByDeviceId(@PathVariable("deviceId") String deviceId) {
         return ResponseEntity.ok(deviceDataService.getByDeviceId(deviceId));
     }
+
 
     @PostMapping
     public ResponseEntity<DeviceDataResponse> create(@Valid @RequestBody DeviceDataRequest request) {

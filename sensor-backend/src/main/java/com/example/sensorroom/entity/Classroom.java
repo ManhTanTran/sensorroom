@@ -37,6 +37,10 @@ public class Classroom {
     @Column(nullable = false)
     private Status status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Roomtype roomtype;
+
     private String note;
 
     @Column(nullable = false)

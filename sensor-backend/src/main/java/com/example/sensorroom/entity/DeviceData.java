@@ -25,8 +25,9 @@ public class DeviceData {
     private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "device_id", nullable = false)
+    @JoinColumn(name = "device_code", referencedColumnName = "device_code", nullable = false)
     private Device device;
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "classroom_id", nullable = false)
