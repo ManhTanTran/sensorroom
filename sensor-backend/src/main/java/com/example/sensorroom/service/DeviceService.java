@@ -11,6 +11,8 @@ public interface DeviceService {
     DeviceResponse getById(Long id);
     List<DeviceResponse> getAll();
 
+    void delete(Long id);
+
     
 }
 

@@ -34,6 +34,11 @@ public class DeviceServiceImpl implements DeviceService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public void delete(Long id) {
+        deviceRepository.deleteById(id);
+    }
+
     
 }
 

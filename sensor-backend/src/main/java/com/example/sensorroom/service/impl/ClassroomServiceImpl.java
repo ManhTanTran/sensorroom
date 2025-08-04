@@ -37,4 +37,9 @@ public class ClassroomServiceImpl implements ClassroomService {
                 .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id " + id));
         return ClassroomMapper.toResponse(classroom);
     }
+
+    @Override
+    public Classroom createClassroom (Classroom classroom){
+        return classroomRepository.save(classroom);
+    }
 }

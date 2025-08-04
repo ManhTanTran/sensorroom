@@ -1,8 +1,10 @@
 package com.example.sensorroom.controller;
 
 import com.example.sensorroom.dto.classroom.*;
+import com.example.sensorroom.entity.Classroom;
 import com.example.sensorroom.service.ClassroomService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,14 @@ public class ClassroomController {
     public ResponseEntity<ClassroomResponse> getClassroom(@PathVariable Long id) {
         return ResponseEntity.ok(classroomService.getById(id));
     }
+
+    @PostMapping
+    public ResponseEntity<Classroom> createClassroom(@Valid @RequestBody ClassroomRequest classroomRequest){
+        Classroom classroom = new Classroom();
+        classroom.setName(classroomRequest.getName());
+        return ResponseEntity.ok(classroomService.createClassroom(classroom));
+    }
+
 
 }
     
