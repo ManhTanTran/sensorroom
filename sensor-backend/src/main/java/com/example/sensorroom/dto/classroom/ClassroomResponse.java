@@ -3,6 +3,7 @@ package com.example.sensorroom.dto.classroom;
 import java.time.LocalDateTime;
 
 import com.example.sensorroom.entity.Classroom;
+import com.example.sensorroom.entity.Roomtype;
 
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +21,8 @@ public class ClassroomResponse {
     private String building;
 
     private String floor;
+
+    private Roomtype roomtype;
 
     private Classroom.Status status;
 

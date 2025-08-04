@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import com.example.sensorroom.entity.Classroom;
+import com.example.sensorroom.entity.Roomtype;
 
 @Data
 @NoArgsConstructor
@@ -23,6 +24,9 @@ public class ClassroomRequest {
 
     @NotBlank
     private String floor;
+
+    @NotBlank
+    private Roomtype roomtype;
 
     @NotNull
     private Classroom.Status status;
