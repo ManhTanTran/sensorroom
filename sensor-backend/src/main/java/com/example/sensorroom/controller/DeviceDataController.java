@@ -22,9 +22,9 @@ public class DeviceDataController {
         return ResponseEntity.ok(deviceDataService.getAll());
     }
 
-    @GetMapping("/device/{deviceId}")
-    public ResponseEntity<List<DeviceDataResponse>> getByDeviceId(@PathVariable("deviceId") String deviceId) {
-        return ResponseEntity.ok(deviceDataService.getByDeviceId(deviceId));
+    @GetMapping("/device/{deviceCode}")
+    public ResponseEntity<List<DeviceDataResponse>> getByDeviceCode(@PathVariable("deviceCode") String deviceCode) {
+        return ResponseEntity.ok(deviceDataService.getByDeviceCode(deviceCode));
     }
 
 

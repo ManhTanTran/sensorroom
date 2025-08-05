@@ -23,12 +23,12 @@ public class DeviceController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DeviceResponse> getDeviceById(@PathVariable Long id) {
+    public ResponseEntity<DeviceResponse> getDeviceById(@PathVariable("id") Long id) {
         return ResponseEntity.ok(deviceService.getById(id));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteDevice(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteDevice(@PathVariable("id") Long id) {
         deviceService.delete(id);
         return ResponseEntity.noContent().build();
     }

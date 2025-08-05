@@ -10,12 +10,18 @@ import org.springframework.context.annotation.Configuration;
 public class MqttClientConfig {
 
     @Bean
-    public MqttClient mqttClient() throws MqttException {
-        String brokerUrl = "tcp://broker.hivemq.com:1883"; // hoặc URL broker bạn dùng
+    public MqttClient mqttClient() {
+        String brokerUrl = "tcp://broker.hivemq.com:1883";
         String clientId = "sensorroom-publisher-" + System.currentTimeMillis();
 
-        MqttClient client = new MqttClient(brokerUrl, clientId, new MemoryPersistence());
-        client.connect(); // kết nối luôn
-        return client;
+        try {
+            MqttClient client = new MqttClient(brokerUrl, clientId, new MemoryPersistence());
+            client.connect();
+            System.out.println("✅ MQTT connected to broker");
+            return client;
+        } catch (MqttException e) {
+            System.err.println("❌ Failed to connect to MQTT broker: " + e.getMessage());
+            throw new RuntimeException("MQTT connection failed", e);
+        }
     }
 }

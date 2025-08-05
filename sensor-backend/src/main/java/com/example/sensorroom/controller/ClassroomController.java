@@ -25,7 +25,7 @@ public class ClassroomController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ClassroomResponse> getClassroom(@PathVariable Long id) {
+    public ResponseEntity<ClassroomResponse> getClassroom(@PathVariable("id") Long id) {
         return ResponseEntity.ok(classroomService.getById(id));
     }
 

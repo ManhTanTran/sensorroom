@@ -39,8 +39,8 @@ public class DeviceDataServiceImpl implements DeviceDataService {
     }
 
     @Override
-    public List<DeviceDataResponse> getByDeviceId(String deviceId) {
-        return deviceDataRepository.findByDeviceDeviceCode(deviceId)
+    public List<DeviceDataResponse> getByDeviceCode(String deviceCode) {
+        return deviceDataRepository.findByDeviceDeviceCode(deviceCode)
                 .stream()
                 .map(DeviceDataMapper::toResponse)
                 .collect(Collectors.toList());
