@@ -3,6 +3,7 @@ package com.example.sensorroom.mapper;
 import com.example.sensorroom.entity.Device;
 import com.example.sensorroom.dto.device.DeviceRequest;
 import com.example.sensorroom.dto.device.DeviceResponse;
+import com.example.sensorroom.dto.device.DeviceUpdateRequest;
 import com.example.sensorroom.entity.Classroom;
 import com.example.sensorroom.entity.User;
 
@@ -39,6 +40,18 @@ public class DeviceMapper {
             .createdById(device.getCreatedBy() != null ? device.getCreatedBy().getId() : null)
             .createdByName(device.getCreatedBy() != null ? device.getCreatedBy().getFullName() : null)
             .build();
+    }
+
+    public static void updateDeviceFromRequest(Device device, DeviceUpdateRequest request, Classroom classroom) {
+        device.setName(request.getName());
+        device.setType(request.getType());
+        device.setStatus(request.getStatus());
+        device.setDataCycle(request.getDataCycle());
+        device.setNotes(request.getNotes());
+
+        if (classroom != null) {
+            device.setClassroom(classroom);
+        }
     }
 
 }

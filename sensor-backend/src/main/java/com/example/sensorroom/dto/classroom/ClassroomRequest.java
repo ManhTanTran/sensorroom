@@ -25,7 +25,7 @@ public class ClassroomRequest {
     @NotBlank
     private String floor;
 
-    @NotBlank
+    @NotNull
     private Roomtype roomtype;
 
     @NotNull
