@@ -46,18 +46,18 @@ public class ClassroomEditView {
         TextField idField = new TextField();
         TextField numberField = new TextField();
         ComboBox<String> buildingCombo = new ComboBox<>();
-        buildingCombo.getItems().addAll("Tòa A", "Tòa B", "Tòa C");
+        buildingCombo.getItems().addAll("HA8, HA9");
         ComboBox<String> floorCombo = new ComboBox<>();
-        floorCombo.getItems().addAll("Tầng 1", "Tầng 2", "Tầng 3", "Tầng 4", "Tầng 5");
+        floorCombo.getItems().addAll("Tầng 1", "Tầng 2");
         ComboBox<String> typeCombo = new ComboBox<>();
         typeCombo.getItems().addAll("Phòng học", "Phòng Lab");
 
         idField.setText(classroomToEdit.getId());
         idField.setDisable(true);
-        numberField.setText(classroomToEdit.getRoomNumber());
-        buildingCombo.setValue(classroomToEdit.getBuilding());
+        numberField.setText(classroomToEdit.roomNumberProperty().get());
+        buildingCombo.setValue(classroomToEdit.buildingProperty().get());
         floorCombo.setValue(classroomToEdit.floorProperty().get());
-        typeCombo.setValue(classroomToEdit.roomTypeProperty().get());
+        typeCombo.setValue(classroomToEdit.displayRoomTypeProperty().get());
 
         inputGrid.add(new Label("Mã phòng học *"), 0, 0);
         inputGrid.add(idField, 1, 0);
@@ -107,7 +107,7 @@ public class ClassroomEditView {
             classroomToEdit.roomNumberProperty().set(numberField.getText());
             classroomToEdit.buildingProperty().set(buildingCombo.getValue());
             classroomToEdit.floorProperty().set(floorCombo.getValue());
-            classroomToEdit.roomTypeProperty().set(typeCombo.getValue());
+            classroomToEdit.displayRoomTypeProperty().set(typeCombo.getValue());
 
             new Alert(Alert.AlertType.INFORMATION, "Đã cập nhật thông tin phòng học thành công!").show();
             onBackCallback.run();

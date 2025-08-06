@@ -3,6 +3,7 @@ package com.example.smartroom.view;
 import com.example.smartroom.controller.MainViewController;
 import com.example.smartroom.model.User;
 import com.example.smartroom.service.AuthenticationService;
+import com.example.smartroom.service.DataService;
 import com.example.smartroom.service.UserSession;
 import com.example.smartroom.util.ResourceLoader;
 import javafx.geometry.Insets;
@@ -17,6 +18,8 @@ import javafx.stage.Stage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.URL;
+import java.util.concurrent.CompletableFuture;
+
 import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
@@ -112,6 +115,7 @@ public class LoginView {
 
         Scene scene = new Scene(root, 1200, 700);
         ResourceLoader.loadCSS(scene, "/styles/style.css");
+
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
         primaryStage.show();
@@ -146,8 +150,14 @@ public class LoginView {
         User user = authService.login(username, password);
         if (user != null) {
             UserSession.getInstance(user);
-            primaryStage.close();
-            new MainViewController().showMainStage();
+            CompletableFuture.runAsync(() -> {
+                DataService.loadAllDeviceDataFromApi();
+                javafx.application.Platform.runLater(() -> {
+                    primaryStage.close();
+                    new MainViewController().showMainStage();
+                });
+            });
+
         } else {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Lỗi Đăng Nhập");

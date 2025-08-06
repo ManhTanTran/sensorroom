@@ -170,6 +170,7 @@ public class MainViewController {
                         .findFirst().orElse(null);
 
                 if (singleRoom != null) {
+                    singleRoom.postProcess();
                     return new KtvSingleRoomDashboardView(singleRoom).getView();
                 } else {
                     return new Label("Lỗi: Không tìm thấy thông tin phòng học.");
