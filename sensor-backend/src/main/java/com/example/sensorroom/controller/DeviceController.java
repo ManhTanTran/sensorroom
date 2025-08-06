@@ -1,8 +1,10 @@
 package com.example.sensorroom.controller;
 
 import com.example.sensorroom.dto.device.DeviceResponse;
+import com.example.sensorroom.dto.device.DeviceUpdateRequest;
 import com.example.sensorroom.service.DeviceService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
@@ -31,6 +33,15 @@ public class DeviceController {
     public ResponseEntity<Void> deleteDevice(@PathVariable("id") Long id) {
         deviceService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/code/{deviceCode}")
+    public ResponseEntity<DeviceResponse> updateDeviceByDeviceCode(
+            @PathVariable("deviceCode") String deviceCode,
+            @Valid @RequestBody DeviceUpdateRequest request) {
+
+        DeviceResponse updatedDevice = deviceService.updateByDeviceCode(deviceCode, request);
+        return ResponseEntity.ok(updatedDevice);
     }
 
     
