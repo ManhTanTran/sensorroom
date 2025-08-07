@@ -42,4 +42,21 @@ public class ClassroomServiceImpl implements ClassroomService {
     public Classroom createClassroom (Classroom classroom){
         return classroomRepository.save(classroom);
     }
+
+    @Override
+    public ClassroomResponse updateByClassroomId(Long id, ClassroomUpdateRequest request) {
+        Classroom classroom = classroomRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Classroom not found"));
+        
+
+        ClassroomMapper.updateClassroomFromRequest(classroom,request);
+        classroomRepository.save(classroom);
+
+        return ClassroomMapper.toResponse(classroom);
+    }
+
+    @Override
+    public void delete(Long id){
+        classroomRepository.deleteById(id);
+    }
 }

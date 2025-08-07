@@ -5,7 +5,7 @@ import com.example.sensorroom.dao.DeviceDataRepository;
 import com.example.sensorroom.dao.DeviceRepository;
 import com.example.sensorroom.dto.devicedata.DeviceDataRequest;
 import com.example.sensorroom.entity.DeviceData;
-import com.example.sensorroom.entity.DeviceStatus;
+import com.example.sensorroom.entity.constant.DeviceStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;

@@ -3,7 +3,7 @@ package com.example.sensorroom.dao;
 
 import com.example.sensorroom.entity.Device;
 import com.example.sensorroom.entity.DeviceData;
-import com.example.sensorroom.entity.DeviceType;
+import com.example.sensorroom.entity.constant.DeviceType;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

@@ -1,6 +1,7 @@
 package com.example.sensorroom.controller;
 
 import com.example.sensorroom.dto.device.DeviceCreateRequest;
+import com.example.sensorroom.entity.constant.DeviceStatus;
 import com.example.sensorroom.service.DeviceService;
 import com.example.sensorroom.service.MqttPublisherService;
 import lombok.RequiredArgsConstructor;
@@ -16,20 +17,20 @@ public class MqttTestController {
     private final MqttPublisherService mqttPublisherService;
     private final DeviceService deviceService;
 
-    @PostMapping("/publish-device")
-    public String publishDevice(@RequestBody DeviceCreateRequest request) {
+    @PostMapping("/test-publish-create")
+    public ResponseEntity<String> testPublishCreate(@RequestBody DeviceCreateRequest request) {
         mqttPublisherService.publishDeviceCreate(request);
-        return "Đã gửi lên MQTT.";
-    }
-
-    @PostMapping("/control-device")
-    public ResponseEntity<String> controlDevice(
-        @RequestParam(name = "deviceCode") String deviceCode,
-        @RequestParam(name = "classroomId") Long classroomId) {
-        deviceService.activeDevice(deviceCode); // đã kiểm tra status bên trong service
-        return ResponseEntity.ok("✅ Thiết bị đã được kích hoạt và gửi lệnh MQTT.");
+        return ResponseEntity.ok("✅ Đã gửi DEVICE_CREATE lên MQTT (test)");
     }
 
 
+    @PutMapping("/status")
+    public ResponseEntity<?> updateDeviceStatus(
+        @RequestParam("deviceCode") String deviceCode,
+        @RequestParam("deviceStatus") DeviceStatus status
+    ) {
+        deviceService.updateDeviceStatus(deviceCode, status);
+        return ResponseEntity.ok().build();
+    }
 
 }

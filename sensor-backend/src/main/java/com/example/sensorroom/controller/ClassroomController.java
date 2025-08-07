@@ -36,6 +36,27 @@ public class ClassroomController {
         return ResponseEntity.ok(classroomService.createClassroom(classroom));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ClassroomResponse> updateClassroomById(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody ClassroomUpdateRequest request){
+            
+        ClassroomResponse updatedClassroom = classroomService.updateByClassroomId(id, request);
+        return ResponseEntity.ok(updatedClassroom);
+    }
 
+    @DeleteMapping("/{id}")
+
+    public ResponseEntity<Void> deleteClassroom(@PathVariable("id") Long id){
+        classroomService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+   
+   
+    
 }
+
+
+
+
     

@@ -1,7 +1,7 @@
 package com.example.sensorroom.dto.device;
 
-import com.example.sensorroom.entity.DeviceStatus;
-import com.example.sensorroom.entity.DeviceType;
+import com.example.sensorroom.entity.constant.DeviceStatus;
+import com.example.sensorroom.entity.constant.DeviceType;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

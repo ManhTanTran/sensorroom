@@ -3,7 +3,7 @@ package com.example.sensorroom.dto.classroom;
 import java.time.LocalDateTime;
 
 import com.example.sensorroom.entity.Classroom;
-import com.example.sensorroom.entity.Roomtype;
+import com.example.sensorroom.entity.constant.Roomtype;
 
 import lombok.Builder;
 import lombok.Data;

@@ -2,8 +2,8 @@ package com.example.sensorroom.dto.device;
 
 import java.time.LocalDateTime;
 
-import com.example.sensorroom.entity.DeviceStatus;
-import com.example.sensorroom.entity.DeviceType;
+import com.example.sensorroom.entity.constant.DeviceStatus;
+import com.example.sensorroom.entity.constant.DeviceType;
 
 import lombok.Builder;
 import lombok.Data;

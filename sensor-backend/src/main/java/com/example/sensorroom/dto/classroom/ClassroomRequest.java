@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import com.example.sensorroom.entity.Classroom;
-import com.example.sensorroom.entity.Roomtype;
+import com.example.sensorroom.entity.constant.Roomtype;
 
 @Data
 @NoArgsConstructor

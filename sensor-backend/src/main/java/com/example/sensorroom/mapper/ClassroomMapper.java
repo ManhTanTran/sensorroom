@@ -2,6 +2,7 @@ package com.example.sensorroom.mapper;
 
 import com.example.sensorroom.dto.classroom.ClassroomRequest;
 import com.example.sensorroom.dto.classroom.ClassroomResponse;
+import com.example.sensorroom.dto.classroom.ClassroomUpdateRequest;
 import com.example.sensorroom.entity.Classroom;
 
 public class ClassroomMapper {
@@ -35,5 +36,12 @@ public class ClassroomMapper {
                         classroom.getDevices() != null ? classroom.getDevices().size() : 0
                 )
                 .build();
+    }
+
+    public static void updateClassroomFromRequest(Classroom classroom, ClassroomUpdateRequest classroomUpdateRequest){
+        classroom.setName(classroomUpdateRequest.getName());
+        classroom.setBuilding(classroomUpdateRequest.getBuilding());
+        classroom.setFloor(classroomUpdateRequest.getFloor());
+        classroom.setRoomtype(classroomUpdateRequest.getRoomtype());
     }
 }

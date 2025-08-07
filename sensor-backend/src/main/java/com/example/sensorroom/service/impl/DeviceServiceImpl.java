@@ -3,6 +3,7 @@ package com.example.sensorroom.service.impl;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
 import org.springframework.stereotype.Service;
 
 import com.example.sensorroom.dao.ClassroomRepository;
@@ -11,7 +12,7 @@ import com.example.sensorroom.dto.device.DeviceResponse;
 import com.example.sensorroom.dto.device.DeviceUpdateRequest;
 import com.example.sensorroom.entity.Classroom;
 import com.example.sensorroom.entity.Device;
-import com.example.sensorroom.entity.DeviceStatus;
+import com.example.sensorroom.entity.constant.DeviceStatus;
 import com.example.sensorroom.exception.ResourceNotFoundException;
 import com.example.sensorroom.exception.BadRequestException;
 import com.example.sensorroom.mapper.DeviceMapper;
@@ -48,24 +49,7 @@ public class DeviceServiceImpl implements DeviceService {
         deviceRepository.deleteById(id);
     }
 
-    public void activeDevice(String deviceCode){
-        Device device = deviceRepository.findByDeviceCode(deviceCode)
-            .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
-
-    if (device.getStatus() == DeviceStatus.INACTIVE) {
-        throw new BadRequestException("Device is INACTIVE");
-    }
-
-    device.setStatus(DeviceStatus.ACTIVE);
-    deviceRepository.save(device);
-
-    // Gửi lên MQTT cho sensor biết
-    Long classroomId = device.getClassroom().getId();
-    mqttPublisherService.publishDeviceControl(deviceCode, classroomId);
-    
-    }
-
-   @Override
+    @Override
     public DeviceResponse updateByDeviceCode(String deviceCode, DeviceUpdateRequest request) {
         Device device = deviceRepository.findByDeviceCode(deviceCode)
             .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
@@ -80,6 +64,31 @@ public class DeviceServiceImpl implements DeviceService {
         deviceRepository.save(device);
 
         return DeviceMapper.toResponse(device);
+    }
+
+    @Override
+    public void updateDeviceStatus(String deviceCode, DeviceStatus newStatus) {
+        Device device = deviceRepository.findByDeviceCode(deviceCode)
+            .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
+
+        DeviceStatus currentStatus = device.getStatus();
+
+        if (currentStatus == newStatus) {
+            throw new BadRequestException("Device is already " + newStatus.name());
+        }
+
+        // Cập nhật trạng thái mới
+        device.setStatus(newStatus);
+        deviceRepository.save(device);
+
+        Long classroomId = device.getClassroom().getId();
+
+        // Gửi lệnh MQTT tương ứng
+        if (newStatus == DeviceStatus.ACTIVE) {
+            mqttPublisherService.publishDeviceCreate(deviceCode, classroomId);
+        } else if (newStatus == DeviceStatus.INACTIVE) {
+            mqttPublisherService.publishDeviceDelete(deviceCode, classroomId); // dừng thiết bị
+        }
     }
 
     

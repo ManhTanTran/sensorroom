@@ -1,4 +1,4 @@
-package com.example.sensorroom.entity;
+package com.example.sensorroom.entity.constant;
 
 public enum DeviceType {
     TEMPERATURE,

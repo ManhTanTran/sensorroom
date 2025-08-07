@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.example.sensorroom.entity.constant.Roomtype;
+
 import jakarta.persistence.*;
 import lombok.*;
 

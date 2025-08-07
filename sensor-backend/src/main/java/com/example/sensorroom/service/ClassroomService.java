@@ -12,4 +12,8 @@ public interface ClassroomService {
     ClassroomResponse getById(Long id);
 
     Classroom createClassroom(Classroom classroom);
+
+    ClassroomResponse updateByClassroomId(Long id, ClassroomUpdateRequest request);
+
+    void delete(Long id);
 }

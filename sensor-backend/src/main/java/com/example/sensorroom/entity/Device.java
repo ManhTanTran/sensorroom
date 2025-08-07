@@ -3,6 +3,9 @@ package com.example.sensorroom.entity;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.sensorroom.entity.constant.DeviceStatus;
+import com.example.sensorroom.entity.constant.DeviceType;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
