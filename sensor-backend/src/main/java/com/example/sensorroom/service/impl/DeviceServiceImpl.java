@@ -85,6 +85,7 @@ public class DeviceServiceImpl implements DeviceService {
 
         // Gửi lệnh MQTT tương ứng
         if (newStatus == DeviceStatus.ACTIVE) {
+            mqttPublisherService.publishDeviceDelete(deviceCode, classroomId);
             mqttPublisherService.publishDeviceCreate(deviceCode, classroomId);
         } else if (newStatus == DeviceStatus.INACTIVE) {
             mqttPublisherService.publishDeviceDelete(deviceCode, classroomId); // dừng thiết bị

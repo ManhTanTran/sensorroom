@@ -48,10 +48,6 @@ public class DeviceMapper {
         device.setStatus(request.getStatus());
         device.setDataCycle(request.getDataCycle());
         device.setNotes(request.getNotes());
-
-        if (classroom != null) {
-            device.setClassroom(classroom);
-        }
     }
 
 }
