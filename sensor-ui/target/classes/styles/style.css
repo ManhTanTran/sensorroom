@@ -149,7 +149,7 @@
     -fx-font-size: 22px;
     -fx-font-weight: 700;
     -fx-text-fill: #1E293B;
-    -fx-alignment: center;
+    -fx-alignment: CENTER;
 }
 
 /* Toàn bộ table view */

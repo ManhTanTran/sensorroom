@@ -3,10 +3,15 @@ package com.example.smartroom.view;
 import com.example.smartroom.model.AlertHistory;
 import com.example.smartroom.model.Classroom;
 import com.example.smartroom.model.Device;
+import com.example.smartroom.model.DeviceData;
+import com.example.smartroom.service.ApiService;
 import com.example.smartroom.service.DataService;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -22,16 +27,89 @@ import javafx.scene.text.Font;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
 public class AdminDashboardView {
 
     private StackPane mainContentPane;
+    // --- THÊM CÁC BIẾN ĐỂ LƯU DỮ LIỆU TỪ API ---
+    private final ApiService apiService = new ApiService();
+    private final ObservableList<Device> masterDeviceList = FXCollections.observableArrayList();
+    private final ObservableList<Classroom> masterClassroomList = FXCollections.observableArrayList();
 
 
     public Node getView() {
         mainContentPane = new StackPane();
-        showAdminDashboard();
+        loadInitialData();
         return mainContentPane;
     }
+
+    /**
+     * Phương thức mới để tải dữ liệu từ API
+     */
+    private void loadInitialData() {
+        CompletableFuture<ObservableList<Device>> devicesFuture = apiService.fetchDevices();
+        CompletableFuture<ObservableList<Classroom>> classroomsFuture = apiService.fetchClassrooms();
+        CompletableFuture<List<DeviceData>> deviceDataFuture = apiService.fetchAllDeviceData();
+
+        CompletableFuture.allOf(devicesFuture, classroomsFuture, deviceDataFuture).thenRun(() -> {
+            Platform.runLater(() -> {
+                masterDeviceList.setAll(devicesFuture.join());
+                masterClassroomList.setAll(classroomsFuture.join());
+
+                // GÁN DANH SÁCH DEVICE VÀO MỖI CLASSROOM
+                for (Classroom classroom : masterClassroomList) {
+                    List<Device> devicesInRoom = masterDeviceList.stream()
+                            .filter(d -> classroom.getRoomNumber().equals(d.getRoom()))
+                            .toList();
+                    classroom.setDevicesInRoom(devicesInRoom);
+                }
+
+                // GÁN GIÁ TRỊ ĐO MỚI NHẤT CHO TỪNG CLASSROOM
+                Map<String, DeviceData> latestDataMap = deviceDataFuture.join().stream()
+                        .collect(Collectors.toMap(DeviceData::getDeviceId, data -> data, (d1, d2) -> d1));
+
+                masterClassroomList.forEach(classroom -> {
+                    for (Device d : classroom.getDevicesInRoom()) {
+                        DeviceData data = latestDataMap.get(d.getDeviceId());
+                        if (data == null) continue;
+
+                        switch (d.getType()) {
+                            case "TEMPERATURE" -> classroom.setTemperature(data.getTemperature());
+                            case "HUMIDITY" -> classroom.setHumidity(data.getHumidity());
+                            case "LIGHT" -> classroom.setLux(data.getLight());
+                            case "CO2" -> classroom.setCo2(data.getCo2());
+                        }
+                    }
+                });
+
+                //DataService.loadAllDevicesFromApi(); // 👈 RẤT QUAN TRỌNG
+                DataService.getAllDeviceData();
+                DataService.loadAllDevicesFromApi();
+                DataService.loadAllDeviceDataFromApi();
+                DataService.regenerateAlertsFromDeviceData();
+
+                DataService.setAllDevices(masterDeviceList);
+                DataService.setAllClassrooms(masterClassroomList);
+
+                showAdminDashboard();
+            });
+        }).exceptionally(ex -> {
+            Platform.runLater(() -> {
+                Label errorLabel = new Label("Không thể tải dữ liệu từ server: " + ex.getMessage());
+                mainContentPane.getChildren().setAll(errorLabel);
+            });
+            return null;
+        });
+
+
+
+    }
+
+
 
     private void showAdminDashboard() {
         VBox adminLayout = new VBox(30);
@@ -74,7 +152,8 @@ public class AdminDashboardView {
     private HBox createTopSection() {
         HBox topSection = new HBox(30);
         VBox leftCardsPanel = createLeftCardsPanel();
-        Node pieChart = createRoomQualityPieChart(DataService.getAllClassrooms());
+        Node pieChart = createRoomQualityPieChart(masterClassroomList);
+
 
         // SỬA LẠI BỐ CỤC TẠI ĐÂY
         // Cho VBox thẻ chiếm ưu thế và đẩy PieChart
@@ -90,8 +169,11 @@ public class AdminDashboardView {
         // Đặt chiều rộng ưa thích cho VBox để nó "phình" ra
         container.setPrefWidth(750);
 
-        ObservableList<Device> masterDeviceList = DataService.getAllDevices();
-        ObservableList<Classroom> masterClassroomList = DataService.getAllClassrooms();
+        //ObservableList<Device> masterDeviceList = DataService.getAllDevices();
+        //ObservableList<Classroom> masterClassroomList = DataService.getAllClassrooms();
+
+        ObservableList<Device> masterDeviceList = this.masterDeviceList;
+        ObservableList<Classroom> masterClassroomList = this.masterClassroomList;
 
         HBox topRowCards = new HBox(20);
         Node deviceCard = createDynamicInfoCard(Bindings.size(masterDeviceList).asString(), "Tổng cảm biến");
@@ -110,13 +192,26 @@ public class AdminDashboardView {
         bottomRowCards.getChildren().forEach(c -> HBox.setHgrow(c, Priority.ALWAYS));
 
         ComboBox<Classroom> roomSelector = new ComboBox<>();
-        ObservableList<Classroom> activeRooms = masterClassroomList.filtered(c -> "Hoạt động".equals(c.statusProperty().get()));
+
+
+        FilteredList<Classroom> activeRooms = new FilteredList<>(masterClassroomList);
+        activeRooms.setPredicate(c -> "ACTIVE".equals(c.statusProperty().get()));
+
+// Khi statusProperty của bất kỳ Classroom nào thay đổi, cập nhật lại predicate
+        masterClassroomList.forEach(c ->
+                c.statusProperty().addListener((obs, oldVal, newVal) -> {
+                    activeRooms.setPredicate(c2 -> "ACTIVE".equals(c2.statusProperty().get()));
+                })
+        );
+
         roomSelector.setItems(activeRooms);
         roomSelector.setPromptText("Chọn phòng học");
+
+// Hiển thị ID phòng học trong ComboBox
         roomSelector.setConverter(new javafx.util.StringConverter<>() {
             @Override
             public String toString(Classroom c) {
-                return c == null ? "" : c.getId();
+                return c == null ? "" : c.getRoomNumber();
             }
 
             @Override
@@ -124,12 +219,15 @@ public class AdminDashboardView {
                 return null;
             }
         });
+
+// Mở dashboard khi chọn phòng
         roomSelector.setOnAction(e -> {
             Classroom selected = roomSelector.getValue();
             if (selected != null) {
                 showKtvSingleRoomView(selected);
             }
         });
+
 
         Label valueLabel = new Label("Chất lượng môi trường:");
         valueLabel.getStyleClass().add("chart-title");
@@ -145,8 +243,9 @@ public class AdminDashboardView {
         ObservableList<Classroom> masterClassroomList = DataService.getAllClassrooms();
 
         // Truyền danh sách phòng vào các phương thức tạo biểu đồ
-        Node topRoomsChart = createTopQualityRoomsChart(masterClassroomList);
-        Node mostAlertsChart = createMostAlertsRoomsChart(masterClassroomList);
+        Node topRoomsChart = createTopQualityRoomsChart(this.masterClassroomList);
+        Node mostAlertsChart = createMostAlertsRoomsChart(this.masterClassroomList);
+
         Node alertsByTypeChart = createAlertsByTypeDonutChart();
 
         bottomSection.getChildren().addAll(topRoomsChart, mostAlertsChart, alertsByTypeChart);
@@ -194,6 +293,7 @@ public class AdminDashboardView {
         PieChart chart = new PieChart();
         chart.setLabelsVisible(false);
         chart.setLegendVisible(false);
+        chart.setAnimated(true);
 
         Runnable updateChart = () -> {
             chart.setData(DataService.getRoomQualityDistribution(classroomList));
@@ -209,7 +309,7 @@ public class AdminDashboardView {
                 };
                 data.getNode().setStyle("-fx-pie-color: " + color + ";");
                 legendColumn.getChildren().add(createLegendItem(
-                        String.format(" %s (%d)", data.getName(), (int) data.getPieValue()),
+                        String.format(" %s (%.2f%s)", data.getName(), data.getPieValue() * 100 /classroomList.size(), "%"),
                         color)
                 );
             }
@@ -236,9 +336,18 @@ public class AdminDashboardView {
         title.setAlignment(Pos.CENTER);
         title.getStyleClass().add("chart-title");
 
-        PieChart chart = new PieChart(DataService.getAlertsByTypeDistribution());
+        HBox contentBox = new HBox(10);
+
+        PieChart chart = new PieChart();
+        Runnable updateChart = () -> {
+            chart.setData(DataService.getAlertsByTypeDistribution());
+        };
+        updateChart.run();
+        DataService.getAlertHistory().addListener((ListChangeListener<AlertHistory>) change -> updateChart.run());
+
         chart.setLabelsVisible(false);
         chart.setLegendVisible(false);
+
 
         Circle donutHole = new Circle();
         donutHole.setFill(Color.WHITE);
@@ -248,25 +357,31 @@ public class AdminDashboardView {
         StackPane donutPane = new StackPane(chart, donutHole);
         VBox.setVgrow(donutPane, Priority.ALWAYS);
 
-        HBox customLegend = new HBox();
+        VBox customLegend = new VBox(20);
+        customLegend.setMinWidth(120);
+        customLegend.setPadding(new Insets(70, 0, 0, 0));
         customLegend.getStyleClass().add("custom-legend-hbox");
         String[] colors = {"#004A7C", "#007BFF", "#74B4E0", "#A0AEC0"};
         int i = 0;
         for (PieChart.Data data : chart.getData()) {
             data.getNode().getStyleClass().add("default-color" + i);
             customLegend.getChildren().add(createLegendItem(
-                    String.format(" %s(%d)  ", data.getName(), (int) data.getPieValue()),
+                    String.format(" %s (%d)  ", data.getName(), (int) data.getPieValue()),
                     colors[i % colors.length])
             );
             i++;
         }
 
-        container.getChildren().addAll(title, donutPane, customLegend);
+        chart.setAnimated(true);
+
+        contentBox.getChildren().addAll(customLegend, donutPane);
+
+        container.getChildren().addAll(title, contentBox);
         return container;
     }
 
     Node createLegendItem(String text, String color) {
-        HBox item = new HBox(0);
+        HBox item = new HBox(5);
         item.setAlignment(Pos.CENTER_LEFT);
 
         Rectangle colorRect = new Rectangle(14, 14);
@@ -298,12 +413,20 @@ public class AdminDashboardView {
         yAxis.setLabel("Phòng học");
         BarChart<Number, String> barChart = new BarChart<>(xAxis, yAxis);
         barChart.setLegendVisible(false);
+        barChart.setAnimated(true);
 
         XYChart.Series<Number, String> series = new XYChart.Series<>();
         barChart.getData().add(series);
 
         // Hàm cập nhật
-        Runnable updateChart = () -> series.setData(DataService.getTopQualityRooms(classroomList));
+        Runnable updateChart = () -> {
+            ObservableList<XYChart.Data<Number, String>> chartData = DataService.getTopQualityRooms(classroomList);
+            if (chartData != null && !chartData.isEmpty()) {
+                series.setData(chartData);
+            } else {
+                series.getData().clear(); // Tránh lỗi nếu dữ liệu rỗng
+            }
+        };
 
         updateChart.run(); // Chạy lần đầu
         classroomList.addListener((ListChangeListener<Classroom>) c -> updateChart.run());
@@ -325,7 +448,7 @@ public class AdminDashboardView {
 
         CategoryAxis xAxis = new CategoryAxis();
         xAxis.setLabel("Phòng học");
-        NumberAxis yAxis = new NumberAxis(0, 10, 2);
+        NumberAxis yAxis = new NumberAxis(0, 100, 2);
         yAxis.setLabel("Số lần cảnh báo");
         BarChart<String, Number> barChart = new BarChart<>(xAxis, yAxis);
         barChart.setLegendVisible(false);

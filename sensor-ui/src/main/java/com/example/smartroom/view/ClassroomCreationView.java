@@ -1,8 +1,14 @@
 package com.example.smartroom.view;
 
 import com.example.smartroom.model.Classroom;
+import com.example.smartroom.model.CreateClassroomRequest;
 import com.example.smartroom.model.Device;
+import com.example.smartroom.model.UpdateDeviceRequest;
+import com.example.smartroom.service.ApiService;
 import com.example.smartroom.service.DataService;
+import com.google.gson.Gson;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -16,11 +22,14 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class ClassroomCreationView {
 
     // Callback để báo cho view cha biết khi nào cần quay lại
     private final Runnable onBackCallback;
+    private final ApiService apiService = new ApiService();
 
     public ClassroomCreationView(Runnable onBackCallback) {
         this.onBackCallback = onBackCallback;
@@ -53,16 +62,17 @@ public class ClassroomCreationView {
         TextField idField = new TextField();
         TextField numberField = new TextField();
         ComboBox<String> buildingCombo = new ComboBox<>();
-        buildingCombo.getItems().addAll("Tòa A", "Tòa B", "Tòa C");
+        buildingCombo.getItems().addAll("HA8", "HA9");
         ComboBox<String> floorCombo = new ComboBox<>();
-        floorCombo.getItems().addAll("Tầng 1", "Tầng 2", "Tầng 3", "Tầng 4", "Tầng 5");
+        floorCombo.getItems().addAll("Tầng 1", "Tầng 2");
         ComboBox<String> typeCombo = new ComboBox<>();
         typeCombo.getItems().addAll("Phòng học", "Phòng Lab");
         typeCombo.getSelectionModel().selectFirst();
-        ComboBox<Device> tempSensorCombo = createSensorComboBox("Cảm biến nhiệt độ");
-        ComboBox<Device> humiditySensorCombo = createSensorComboBox("Cảm biến độ ẩm");
-        ComboBox<Device> lightSensorCombo = createSensorComboBox("Cảm biến ánh sáng");
-        ComboBox<Device> co2SensorCombo = createSensorComboBox("Cảm biến CO2");
+        // THAY ĐỔI: Loại cảm biến giờ đây khớp với Enum của backend
+        ComboBox<Device> tempSensorCombo = createSensorComboBox("TEMPERATURE");
+        ComboBox<Device> humiditySensorCombo = createSensorComboBox("HUMIDITY");
+        ComboBox<Device> lightSensorCombo = createSensorComboBox("LIGHT");
+        ComboBox<Device> co2SensorCombo = createSensorComboBox("CO2");
 
         inputGrid.add(new Label("Mã phòng học *"), 0, 0);
         inputGrid.add(idField, 1, 0);
@@ -74,13 +84,13 @@ public class ClassroomCreationView {
         inputGrid.add(floorCombo, 1, 3);
         inputGrid.add(new Label("Loại phòng học *"), 2, 0);
         inputGrid.add(typeCombo, 3, 0);
-        inputGrid.add(new Label("Nhiệt độ"), 4, 0);
+        inputGrid.add(new Label("Nhiệt độ *"), 4, 0);
         inputGrid.add(tempSensorCombo, 5, 0);
-        inputGrid.add(new Label("Độ ẩm"), 6, 0);
+        inputGrid.add(new Label("Độ ẩm *"), 6, 0);
         inputGrid.add(humiditySensorCombo, 7, 0);
-        inputGrid.add(new Label("Ánh sáng"), 4, 1);
+        inputGrid.add(new Label("Ánh sáng *"), 4, 1);
         inputGrid.add(lightSensorCombo, 5, 1);
-        inputGrid.add(new Label("CO2"), 6, 1);
+        inputGrid.add(new Label("CO2 *"), 6, 1);
         inputGrid.add(co2SensorCombo, 7, 1);
 
 
@@ -132,59 +142,82 @@ public class ClassroomCreationView {
 
         // --- LOGIC LƯU TRỮ (ĐÃ SỬA) ---
         saveButton.setOnAction(e -> {
-            String id = idField.getText();
-            String number = numberField.getText();
+            String code = idField.getText();
+            String name = numberField.getText();
             String building = buildingCombo.getValue();
             String floor = floorCombo.getValue();
             String roomType = typeCombo.getValue();
+            String mappedRoomType = roomType.equals("Phòng Lab") ? "LAB" : "THUONG";
 
-            if (id.isEmpty() || number.isEmpty() || building == null || floor == null || roomType == null) {
+            String note = notesArea.getText();
+            Device temp = tempSensorCombo.getValue();
+            Device humidity = humiditySensorCombo.getValue();
+            Device co2 = co2SensorCombo.getValue();
+            Device lux = lightSensorCombo.getValue();
+
+            if (code.isEmpty() || name.isEmpty() || building == null || floor == null || roomType == null
+                    || temp == null || humidity == null || co2 == null || lux == null) {
                 new Alert(Alert.AlertType.ERROR, "Vui lòng điền đầy đủ các trường bắt buộc (*).").show();
                 return;
             }
 
-            String currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            CreateClassroomRequest newClassroomRequest = new CreateClassroomRequest(code, name, building, floor, mappedRoomType, note);
 
-            // TẠO ĐỐI TƯỢNG MỚI VỚI HÀM TẠO ĐẦY ĐỦ
-            Classroom newClassroom = new Classroom(
-                    id, number, building, floor, roomType,
-                    currentDate, "Hoạt động",
-                    25, 50, 400, 800,
-                    DataService.getAllDevices() // Truyền vào master list
-            );
+            String json = new Gson().toJson(newClassroomRequest);
+            System.out.println(">>> JSON gửi đi:");
+            System.out.println(json);
 
-            // THÊM VÀO DANH SÁCH GỐC
-            DataService.addClassroom(newClassroom);
-            /*
-            if (tempSensorCombo.getValue() != null) tempSensorCombo.getValue().roomProperty().set(id);
-            if (humiditySensorCombo.getValue() != null) humiditySensorCombo.getValue().roomProperty().set(id);
-            if (lightSensorCombo.getValue() != null) lightSensorCombo.getValue().roomProperty().set(id);
-            if (co2SensorCombo.getValue() != null) co2SensorCombo.getValue().roomProperty().set(id);
-            */
-            updateDevice(tempSensorCombo.getValue(), id);
-            updateDevice(humiditySensorCombo.getValue(), id);
-            updateDevice(lightSensorCombo.getValue(), id);
-            updateDevice(co2SensorCombo.getValue(), id);
+            saveButton.setDisable(true);
+            cancelButton.setDisable(true);
 
+            apiService.createClassroom(newClassroomRequest)
+                    .thenCompose(createdClassroom -> {
+                        List<CompletableFuture<Void>> updateFutures = new ArrayList<>();
 
+                        updateDeviceFuture(updateFutures, tempSensorCombo.getValue(), createdClassroom.getId());
+                        updateDeviceFuture(updateFutures, humiditySensorCombo.getValue(), createdClassroom.getId());
+                        updateDeviceFuture(updateFutures, lightSensorCombo.getValue(), createdClassroom.getId());
+                        updateDeviceFuture(updateFutures, co2SensorCombo.getValue(), createdClassroom.getId());
 
-            new Alert(Alert.AlertType.INFORMATION, "Đã tạo phòng học mới thành công!").show();
-
-            // Quay trở lại danh sách
-            onBackCallback.run();
+                        return CompletableFuture.allOf(updateFutures.toArray(new CompletableFuture[0]));
+                    })
+                    .thenRun(() -> {
+                        Platform.runLater(() -> {
+                            new Alert(Alert.AlertType.INFORMATION, "Đã tạo và gán thiết bị cho phòng học mới thành công!").show();
+                            onBackCallback.run();
+                        });
+                    })
+                    .exceptionally(ex -> {
+                        Platform.runLater(() -> {
+                            ex.printStackTrace();
+                            new Alert(Alert.AlertType.ERROR, "Lỗi khi tạo phòng: " + ex.getCause().getMessage()).show();
+                            saveButton.setDisable(false);
+                            cancelButton.setDisable(false);
+                        });
+                        return null;
+                    });
         });
 
         return mainLayout;
     }
 
+    private void updateDeviceFuture(List<CompletableFuture<Void>> futures, Device device, String classroomId) {
+        if (device != null) {
+            UpdateDeviceRequest updateReq = new UpdateDeviceRequest(classroomId, "ACTIVE");
+            futures.add(apiService.updateDevice(device.getId(), updateReq));
+        }
+    }
+
     private ComboBox<Device> createSensorComboBox(String type) {
         ComboBox<Device> comboBox = new ComboBox<>();
         comboBox.setPromptText("Chọn thiết bị");
-        ObservableList<Device> availableDevices = DataService.getAllDevices().filtered(
-                d -> d.getRoom() == null && type.equals(d.getType())
-        );
-        comboBox.setItems(availableDevices);
 
+        apiService.fetchDevices().thenAccept(devices -> {
+            ObservableList<Device> availableDevices = devices.stream()
+                    .filter(d -> d.getRoom() == null && type.equals(d.getType()))
+                    .collect(Collectors.toCollection(FXCollections::observableArrayList));
+            Platform.runLater(() -> comboBox.setItems(availableDevices));
+        });
         comboBox.setConverter(new StringConverter<>() {
             @Override public String toString(Device device) { return device == null ? "" : device.imeiProperty().get(); }
             @Override public Device fromString(String string) { return null; }

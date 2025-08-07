@@ -45,7 +45,7 @@ public class KtvDashboardView {
                 device -> device.getRoom() != null && currentUser.managedRooms().contains(device.getRoom())
         );
         ObservableList<Classroom> managedClassrooms = allClassrooms.filtered(
-                classroom -> currentUser.managedRooms().contains(classroom.getId())
+                classroom -> currentUser.managedRooms().contains(classroom.getRoomNumber())
         );
 
         // --- HBOX TRÊN CÙNG ---

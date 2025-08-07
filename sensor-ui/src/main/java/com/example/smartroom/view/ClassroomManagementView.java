@@ -1,12 +1,15 @@
 package com.example.smartroom.view;
 
 import com.example.smartroom.model.Classroom;
+import com.example.smartroom.model.Device;
 import com.example.smartroom.model.Role;
 import com.example.smartroom.model.User;
 import com.example.smartroom.service.DataService;
 import com.example.smartroom.service.UserSession;
 import com.example.smartroom.util.ResourceLoader;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
@@ -27,7 +30,9 @@ import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class ClassroomManagementView {
 
@@ -47,9 +52,33 @@ public class ClassroomManagementView {
         layout.getStyleClass().add("management-view-container");
 
         User currentUser = UserSession.getInstance().getUser();
-        ObservableList<Classroom> classroomData = (currentUser.role() == Role.ADMIN)
-                ? DataService.getAllClassrooms()
-                : DataService.getClassroomsForKtv(currentUser.managedRooms());
+        ObservableList<Classroom> classroomData = FXCollections.observableArrayList();
+        ObservableList<Classroom> fromApi;
+
+        DataService.fetchClassroomsWithDevices().thenAccept(allClassrooms -> {
+            ObservableList<Classroom> filteredClassrooms;
+            if (currentUser.role() == Role.ADMIN) {
+                filteredClassrooms = allClassrooms;
+            } else {
+                filteredClassrooms = allClassrooms.stream()
+                        .filter(c -> currentUser.managedRooms().contains(c.getRoomNumber()))
+                        .collect(FXCollections::observableArrayList, ObservableList::add, ObservableList::addAll);
+            }
+
+            for (int i = 0; i < filteredClassrooms.size(); i++) {
+                Classroom c = filteredClassrooms.get(i);
+                if (c.creationDateProperty().get() == null || c.creationDateProperty().get().isEmpty()) {
+                    // Giả lập ngày tạo: hôm nay trừ i ngày
+                    java.time.LocalDate fakeDate = java.time.LocalDate.now().minusDays(i);
+                    c.setCreationDate(fakeDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                }
+            }
+
+
+            javafx.application.Platform.runLater(() -> {
+                classroomData.setAll(filteredClassrooms);
+            });
+        });
 
         FilteredList<Classroom> filteredData = new FilteredList<>(classroomData, p -> true);
         HBox topBox = createFilterBox(filteredData);
@@ -109,8 +138,8 @@ public class ClassroomManagementView {
 
             filteredData.setPredicate(classroom -> {
                 boolean idMatch = idVal.isEmpty() || classroom.idProperty().get().toLowerCase().contains(idVal);
-                boolean roomNumMatch = roomNumVal.isEmpty() || classroom.getRoomNumber().toLowerCase().contains(roomNumVal);
-                boolean buildingMatch = buildingVal == null || buildingVal.equals("Tất cả") || classroom.getBuilding().equals(buildingVal);
+                boolean roomNumMatch = roomNumVal.isEmpty() || classroom.displayRoomTypeProperty().get().toLowerCase().contains(roomNumVal);
+                boolean buildingMatch = buildingVal == null || buildingVal.equals("Tất cả") || classroom.buildingProperty().get().equals(buildingVal);
                 return idMatch && roomNumMatch && buildingMatch;
             });
         });
@@ -149,7 +178,7 @@ public class ClassroomManagementView {
         TableColumn<Classroom, String> numberCol = createCenteredColumn("Số phòng", "roomNumber");
         TableColumn<Classroom, String> buildingCol = createCenteredColumn("Tòa nhà", "building");
         TableColumn<Classroom, String> floorCol = createCenteredColumn("Tầng", "floor");
-        TableColumn<Classroom, String> typeCol = createCenteredColumn("Loại phòng", "roomType");
+        TableColumn<Classroom, String> typeCol = createCenteredColumn("Loại phòng", "displayRoomType");
         TableColumn<Classroom, Integer> deviceCountCol = createCenteredColumn("Số Thiết Bị", "deviceCount");
         TableColumn<Classroom, String> createdDateCol = createCenteredColumn("Ngày tạo", "creationDate");
 
@@ -160,6 +189,58 @@ public class ClassroomManagementView {
                 sttCol, idCol, numberCol, buildingCol, floorCol,
                 typeCol, deviceCountCol, createdDateCol, statusCol, actionCol
         );
+
+        table.setRowFactory(tv -> new TableRow<>() {
+            @Override
+            protected void updateItem(Classroom classroom, boolean empty) {
+                super.updateItem(classroom, empty);
+
+                if (empty || classroom == null) {
+                    setStyle("");
+                    return;
+                }
+
+                //var devices = classroom.getDevicesInRoom(); // Sử dụng đúng hàm bạn có
+                List<Device> devices = DataService.getAllDevices().stream()
+                        .filter(d -> classroom.getRoomNumber().equals(d.getRoom()))
+                        .collect(Collectors.toList());
+
+                if (devices == null || devices.isEmpty()) {
+                    setStyle("");
+                    return;
+                }
+
+                boolean hasWarning = devices.stream().anyMatch(device -> {
+                    String type = device.getType();
+                    String valueStr = device.valueProperty().get();
+                    //if (valueStr == null || valueStr.equals("-")) return true; // xem như lỗi
+                    try {
+                        double value = Double.parseDouble(valueStr.replaceAll("[^\\d.]", ""));
+
+                        return switch (type) {
+                            case "TEMPERATURE" -> value < 18 || value > 30;
+                            case "HUMIDITY"    -> value < 35 || value > 70;
+                            case "LIGHT"       -> value < 200 || value > 1500;
+                            case "CO2"         -> value > 1500;
+                            default -> false;
+                        };
+                    } catch (Exception e) {
+                        return false;
+                    }
+                });
+
+                if (hasWarning) {
+                    setStyle("-fx-background-color: #FCA5A5;"); // đỏ nhạt
+                } else {
+                    setStyle(""); // reset
+                }
+
+                System.out.println("Phòng: " + classroom.getRoomNumber() + " có thiết bị: " + devices.size());
+                devices.forEach(d -> System.out.println(d.getType() + ": " + d.valueProperty().get()));
+
+            }
+        });
+
 
         return table;
     }
@@ -187,7 +268,12 @@ public class ClassroomManagementView {
 
 
     private TableColumn<Classroom, String> createStatusToggleColumn(String title) {
-        TableColumn<Classroom, String> col = createCenteredColumn(title, "status");
+        String translatedTitle = switch (title) {
+            case "ACTIVE" -> "Hoạt động";
+            case "INACTIVE", "MAINTENANCE" -> "Tạm ngưng";
+            default -> title;
+        };
+        TableColumn<Classroom, String> col = createCenteredColumn(translatedTitle, "status");
         col.setCellFactory(column -> new TableCell<>() {
             private final Button statusButton = new Button();
 
@@ -198,9 +284,10 @@ public class ClassroomManagementView {
                     setGraphic(null);
                 } else {
                     Classroom classroom = getTableRow().getItem();
-                    statusButton.setText(item);
+                    statusButton.setText(classroom.getFormattedStatus());
                     statusButton.getStyleClass().add("status-button");
-                    if ("Tạm ngưng".equals(classroom.statusProperty().get())) {
+
+                    if ("Tạm ngưng".equals(classroom.getFormattedStatus())) {
                         statusButton.setStyle("-fx-background-color: #FEF3C7; -fx-text-fill: #92400E");
                     } else {
                         statusButton.setStyle("-fx-background-color: #D1FAE5; -fx-text-fill: #065F46");
@@ -208,11 +295,11 @@ public class ClassroomManagementView {
 
 
                     statusButton.setOnAction(e -> {
-                        if ("Hoạt động".equals(classroom.statusProperty().get())) {
-                            classroom.setStatus("Tạm ngưng");
+                        if ("ACTIVE".equals(classroom.statusProperty().get())) {
+                            classroom.setStatus("INACTIVE");
                             statusButton.setStyle("-fx-background-color: #FEF3C7; -fx-text-fill: #92400E");
                         } else {
-                            classroom.setStatus("Hoạt động");
+                            classroom.setStatus("ACTIVE");
                             statusButton.setStyle("-fx-background-color: #D1FAE5; -fx-text-fill: #065F46");
                         }
                     });
@@ -301,7 +388,7 @@ public class ClassroomManagementView {
             }
 
             private void updateButtons(String status) {
-                if ("Hoạt động".equals(status)) {
+                if ("ACTIVE".equals(status)) {
                     viewBtn.setDisable(false);
                     editBtn.setDisable(true);
                     deleteBtn.setDisable(true);

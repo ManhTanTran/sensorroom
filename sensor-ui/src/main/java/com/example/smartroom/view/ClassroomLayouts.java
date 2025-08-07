@@ -1,6 +1,7 @@
 package com.example.smartroom.view;
 
 import com.example.smartroom.model.Device;
+import com.example.smartroom.service.DataService;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
@@ -34,10 +35,11 @@ public class ClassroomLayouts {
             layout.getChildren().add(createClassroomObject("bàn học", 750, 100 + row * 70, 100, 40));
         }
 
-        Device sensor1 = findDeviceByType(devicesInRoom, "Cảm biến nhiệt độ");
-        Device sensor2 = findDeviceByType(devicesInRoom, "Cảm biến độ ẩm");
-        Device sensor3 = findDeviceByType(devicesInRoom, "Cảm biến ánh sáng");
-        Device sensor4 = findDeviceByType(devicesInRoom, "Cảm biến CO2");
+        Device sensor1 = findDeviceByType(devicesInRoom, "TEMPERATURE");
+        Device sensor2 = findDeviceByType(devicesInRoom, "HUMIDITY");
+        Device sensor3 = findDeviceByType(devicesInRoom, "LIGHT");
+        Device sensor4 = findDeviceByType(devicesInRoom, "CO2");
+
 
         layout.getChildren().add(createSensorButton(sensor1, 920, 80));
         layout.getChildren().add(createSensorButton(sensor2, 180, 170));
@@ -63,10 +65,11 @@ public class ClassroomLayouts {
             layout.getChildren().add(createClassroomObject("Bàn nhóm", 650, 100 + i * 70, 150, 50));
         }
 
-        Device sensor1 = findDeviceByType(devicesInRoom, "Cảm biến nhiệt độ");
-        Device sensor2 = findDeviceByType(devicesInRoom, "Cảm biến độ ẩm");
-        Device sensor3 = findDeviceByType(devicesInRoom, "Cảm biến ánh sáng");
-        Device sensor4 = findDeviceByType(devicesInRoom, "Cảm biến CO2");
+        Device sensor1 = findDeviceByType(devicesInRoom, "TEMPERATURE");
+        Device sensor2 = findDeviceByType(devicesInRoom, "HUMIDITY");
+        Device sensor3 = findDeviceByType(devicesInRoom, "LIGHT");
+        Device sensor4 = findDeviceByType(devicesInRoom, "CO2");
+
 
         layout.getChildren().add(createSensorButton(sensor1, 525, 300));
         layout.getChildren().add(createSensorButton(sensor2, 850, 80));
@@ -76,13 +79,14 @@ public class ClassroomLayouts {
         return layout;
     }
 
-    private static Device findDeviceByType(List<Device> devices, String type) {
+    private static Device findDeviceByType(List<Device> devices, String rawType) {
         if (devices == null) return null;
         return devices.stream()
-                .filter(d -> type.equals(d.getType()))
+                .filter(d -> rawType.equals(d.getRawType()))
                 .findFirst()
                 .orElse(null);
     }
+
 
     private static Node createClassroomObject(String name, double x, double y, double width, double height) {
         VBox box = new VBox(new Label(name));
@@ -130,21 +134,50 @@ public class ClassroomLayouts {
 
     private static Node createSensorButton(Device device, double x, double y) {
         Button sensorButton = new Button("[Cảm biến]");
-        sensorButton.getStyleClass().add("sensor-button"); // ÁP DỤNG STYLE MỚI
+        sensorButton.getStyleClass().add("sensor-button");
         sensorButton.setCursor(Cursor.HAND);
 
         if (device != null) {
             sensorButton.setDisable(false);
 
-            String details = String.format(
-                    "Serial: %s\nLoại: %s\nPhòng: %s\nThông số gần nhất: %s",
-                    device.imeiProperty().get(),
-                    device.getType(),
-                    device.getRoom(),
-                    device.valueProperty().get()
-            );
-
             sensorButton.setOnAction(e -> {
+                // Lấy bản cập nhật mới nhất từ danh sách toàn cục
+                Optional<Device> latest = DataService.getAllDevices().stream()
+                        .filter(d -> d.getDeviceId().equals(device.getDeviceId()))
+                        .findFirst();
+
+                String valueStr = latest.map(d -> d.valueProperty().get()).orElse("-");
+                String evaluation = "Không xác định";
+
+                try {
+                    // Parse giá trị số từ chuỗi (bỏ đơn vị như °C, %, lux, ppm)
+                    double numericValue = Double.parseDouble(
+                            valueStr.replaceAll("[^\\d.]", "") // loại bỏ mọi ký tự không phải số hoặc dấu chấm
+                    );
+
+                    String type = device.getType();
+                    boolean isExceeded = switch (type) {
+                        case "TEMPERATURE" -> numericValue > 30;
+                        case "HUMIDITY" -> numericValue > 70;
+                        case "LIGHT" -> numericValue > 1500;
+                        case "CO2" -> numericValue > 1500;
+                        default -> false;
+                    };
+
+                    evaluation = isExceeded ? "Vượt ngưỡng" : "Bình thường";
+                } catch (Exception ex) {
+                    evaluation = "Không đọc được giá trị";
+                }
+
+                String details = String.format(
+                        "Serial: %s\nLoại: %s\nPhòng: %s\nThông số gần nhất: %s\nĐánh giá: %s",
+                        device.imeiProperty().get(),
+                        device.getType(),
+                        device.getRoom(),
+                        valueStr,
+                        evaluation
+                );
+
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Thông tin chi tiết cảm biến");
                 alert.setHeaderText(device.getType() + " - " + device.getRoom());
@@ -160,4 +193,7 @@ public class ClassroomLayouts {
         sensorButton.setLayoutY(y);
         return sensorButton;
     }
+
+
+
 }
