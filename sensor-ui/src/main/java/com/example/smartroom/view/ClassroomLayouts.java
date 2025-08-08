@@ -10,6 +10,11 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 
 import java.util.List;
 import java.util.Optional;
@@ -164,26 +169,44 @@ public class ClassroomLayouts {
                         default -> false;
                     };
 
-                    evaluation = isExceeded ? "Vượt ngưỡng" : "Bình thường";
+                    evaluation = isExceeded ? "Vượt ngưỡng!!!" : "Bình thường";
                 } catch (Exception ex) {
                     evaluation = "Không đọc được giá trị";
                 }
 
-                String details = String.format(
-                        "Serial: %s\nLoại: %s\nPhòng: %s\nThông số gần nhất: %s\nĐánh giá: %s",
-                        device.imeiProperty().get(),
-                        device.getType(),
-                        device.getRoom(),
-                        valueStr,
-                        evaluation
-                );
+                String serial = device.imeiProperty().get();
+                String type = device.getType();
+                String room = device.getRoom();
+
+                Text serialText = new Text("Serial: " + serial + "\n");
+                Text typeText = new Text("Loại: " + type + "\n");
+                Text roomText = new Text("Phòng: " + room + "\n");
+                Text valueText = new Text("Thông số gần nhất: " + valueStr + "\n");
+
+                Text evaluationText = new Text("Đánh giá: " + evaluation);
+                if ("Vượt ngưỡng!!!".equals(evaluation)) {
+                    evaluationText.setFill(Color.RED);
+                    evaluationText.setFont(Font.font("System", FontWeight.BOLD, 16));
+                } else {
+                    evaluationText.setFont(Font.font("System", 14));
+                }
+
+// Tăng kích cỡ font cho các Text khác nếu muốn
+                Font normalFont = Font.font("System", 14);
+                serialText.setFont(normalFont);
+                typeText.setFont(normalFont);
+                roomText.setFont(normalFont);
+                valueText.setFont(normalFont);
+
+                TextFlow textFlow = new TextFlow(serialText, typeText, roomText, valueText, evaluationText);
 
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Thông tin chi tiết cảm biến");
-                alert.setHeaderText(device.getType() + " - " + device.getRoom());
-                alert.setContentText(details);
+                alert.setHeaderText(type + " - " + room);
                 alert.getDialogPane().setMinWidth(350);
+                alert.getDialogPane().setContent(textFlow);
                 alert.showAndWait();
+
             });
         } else {
             sensorButton.setDisable(true);

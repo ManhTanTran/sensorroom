@@ -1,9 +1,6 @@
 package com.example.smartroom.view;
 
-import com.example.smartroom.model.Device;
-import com.example.smartroom.model.DeviceData;
-import com.example.smartroom.model.Role;
-import com.example.smartroom.model.User;
+import com.example.smartroom.model.*;
 import com.example.smartroom.service.ApiService;
 import com.example.smartroom.service.DataService;
 import com.example.smartroom.service.UserSession;
@@ -34,7 +31,9 @@ import javafx.scene.paint.Color;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class DeviceManagementView {
@@ -87,9 +86,12 @@ public class DeviceManagementView {
 
 
                 if (!isAdmin) {
-                    List<String> allowedRooms = currentUser.managedRooms();
+                    List<Classroom> allowedRooms = currentUser.managedRooms();
+                    Set<String> managedRoomNumbers = allowedRooms.stream()
+                            .map(Classroom::getRoomNumber)
+                            .collect(Collectors.toSet());
                     System.out.println("🧠 KTV được phép xem các phòng: " + allowedRooms);
-                    devices.removeIf(d -> !allowedRooms.contains(d.getRoom()));
+                    devices.removeIf(d -> !managedRoomNumbers.contains(d.getRoom()));
                 }
 
                 javafx.application.Platform.runLater(() -> {
@@ -175,20 +177,31 @@ public class DeviceManagementView {
         filterBox.setAlignment(Pos.CENTER_LEFT);
         filterBox.getStyleClass().add("filter-box");
 
+        Label searchLabel = new Label("Tìm kiếm:");
+
         TextField imeiFilter = new TextField();
-        imeiFilter.setPromptText("IMEI / Serial");
+        imeiFilter.setPromptText("Mã thiết bị");
+
+        TextField roomFilter = new TextField();
+        roomFilter.setPromptText("Số phòng");
 
         ComboBox<String> typeFilter = new ComboBox<>();
         typeFilter.setPromptText("Loại cảm biến");
         typeFilter.getItems().add("Tất cả");
-        typeFilter.getItems().addAll(sourceData.stream().map(Device::getType).distinct().sorted().toList());
+        typeFilter.getItems().addAll(
+                sourceData.stream()
+                        .map(Device::getType)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .sorted()
+                        .toList()
+        );
         typeFilter.setValue("Tất cả");
 
-        ComboBox<String> roomFilter = new ComboBox<>();
-        roomFilter.setPromptText("Phòng học");
-        roomFilter.getItems().add("Tất cả");
-        roomFilter.getItems().addAll(sourceData.stream().map(Device::getRoom).filter(java.util.Objects::nonNull).distinct().sorted().toList());
-        roomFilter.setValue("Tất cả");
+        ComboBox<String> statusFilter = new ComboBox<>();
+        statusFilter.setPromptText("Trạng thái");
+        statusFilter.getItems().addAll("Tất cả", "ACTIVE", "INACTIVE");
+        statusFilter.setValue("Tất cả");
 
         FontIcon searchIcon = new FontIcon(FontAwesomeSolid.SEARCH);
         searchIcon.setIconSize(14);
@@ -198,29 +211,54 @@ public class DeviceManagementView {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        filterBox.getChildren().addAll(new Label("Tìm kiếm:"), imeiFilter, typeFilter, roomFilter, searchButton, spacer);
+        filterBox.getChildren().addAll(
+                searchLabel, imeiFilter, roomFilter,
+                new Label("Loại cảm biến: "), typeFilter,
+                new Label ("Trạng thái: "), statusFilter, searchButton, spacer
+        );
 
         searchButton.setOnAction(e -> {
-            String imeiValue = imeiFilter.getText().toLowerCase().trim();
-            String typeValue = typeFilter.getValue();
-            String roomValue = roomFilter.getValue();
+            String imeiVal = imeiFilter.getText().trim().toLowerCase();
+            String roomVal = roomFilter.getText().trim().toLowerCase();
+            String typeVal = typeFilter.getValue();
+            String statusVal = statusFilter.getValue();
 
             filteredData.setPredicate(device -> {
-                boolean imeiMatch = imeiValue.isEmpty() || device.imeiProperty().get().toLowerCase().contains(imeiValue);
-                boolean typeMatch = typeValue == null || typeValue.equals("Tất cả") || device.getType().equals(typeValue);
-                boolean roomMatch = roomValue == null || roomValue.equals("Tất cả") || (device.getRoom() != null && device.getRoom().equals(roomValue));
-                return imeiMatch && typeMatch && roomMatch;
+                boolean imeiMatch = imeiVal.isEmpty() || device.imeiProperty().get().toLowerCase().contains(imeiVal);
+                boolean roomMatch = roomVal.isEmpty() || (device.getRoom() != null && device.getRoom().toLowerCase().contains(roomVal));
+                boolean typeMatch = typeVal == null || typeVal.equals("Tất cả") || device.getType().equalsIgnoreCase(typeVal);
+                boolean statusMatch = statusVal == null || statusVal.equals("Tất cả") || device.getStatus().equalsIgnoreCase(statusVal);
+
+                return imeiMatch && roomMatch && typeMatch && statusMatch;
             });
         });
 
         return filterBox;
     }
 
+
+
     private void createDeviceTableColumns(TableView<Device> table, ObservableList<Device> sourceList) {
         TableColumn<Device, String> sttCol = new TableColumn<>("STT");
-        sttCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+        Label sttLabel = new Label("STT");
+        //sttCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+        sttCol.setCellFactory(col -> {
+            TableCell<Device, String> cell = new TableCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || getTableRow() == null) {
+                        setText(null);
+                    } else {
+                        setText(Integer.toString(getIndex() + 1));
+                    }
+                    //setAlignment(Pos.CENTER_RIGHT);
+                }
+            };
+            return cell;
+        });
 
-        TableColumn<Device, String> imeiCol = new TableColumn<>("IMEI / Serial");
+        TableColumn<Device, String> imeiCol = new TableColumn<>("Mã thiết bị");
         imeiCol.setCellValueFactory(new PropertyValueFactory<>("imei"));
 
         TableColumn<Device, String> typeCol = new TableColumn<>("Loại cảm biến");

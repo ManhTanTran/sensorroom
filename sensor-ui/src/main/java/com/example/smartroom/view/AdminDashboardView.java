@@ -6,6 +6,9 @@ import com.example.smartroom.model.Device;
 import com.example.smartroom.model.DeviceData;
 import com.example.smartroom.service.ApiService;
 import com.example.smartroom.service.DataService;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -24,9 +27,11 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
+import javafx.util.Duration;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -39,6 +44,7 @@ public class AdminDashboardView {
     private final ApiService apiService = new ApiService();
     private final ObservableList<Device> masterDeviceList = FXCollections.observableArrayList();
     private final ObservableList<Classroom> masterClassroomList = FXCollections.observableArrayList();
+    private final ObservableList<AlertHistory> masterAlertList = FXCollections.observableArrayList();
 
 
     public Node getView() {
@@ -94,6 +100,12 @@ public class AdminDashboardView {
 
                 DataService.setAllDevices(masterDeviceList);
                 DataService.setAllClassrooms(masterClassroomList);
+                // đảm bảo masterAlertList phản ánh toàn bộ alert hệ thống
+                masterAlertList.setAll(DataService.getAlertHistory());
+                // khi DataService cập nhật getAlertHistory(), cập nhật masterAlertList theo
+                DataService.getAlertHistory().addListener((ListChangeListener<AlertHistory>) change -> {
+                    Platform.runLater(() -> masterAlertList.setAll(DataService.getAlertHistory()));
+                });
 
                 showAdminDashboard();
             });
@@ -372,7 +384,7 @@ public class AdminDashboardView {
             i++;
         }
 
-        chart.setAnimated(true);
+        chart.setAnimated(false);
 
         contentBox.getChildren().addAll(customLegend, donutPane);
 
@@ -403,7 +415,7 @@ public class AdminDashboardView {
         Label title = new Label("Top phòng học theo đánh giá chất lượng không khí");
         title.setMinWidth(300);
         title.setWrapText(true);
-        title.setStyle("-fx-font-size: 15px;\n" +
+        title.setStyle("-fx-font-size: 14px;\n" +
                 "    -fx-font-weight: 700;\n" +
                 "    -fx-text-fill: #1E293B;");
 
@@ -448,24 +460,68 @@ public class AdminDashboardView {
 
         CategoryAxis xAxis = new CategoryAxis();
         xAxis.setLabel("Phòng học");
+
         NumberAxis yAxis = new NumberAxis(0, 100, 2);
         yAxis.setLabel("Số lần cảnh báo");
+
         BarChart<String, Number> barChart = new BarChart<>(xAxis, yAxis);
         barChart.setLegendVisible(false);
 
         XYChart.Series<String, Number> series = new XYChart.Series<>();
         barChart.getData().add(series);
 
-        // Hàm cập nhật
         Runnable updateChart = () -> {
-            ObservableList<XYChart.Data<String, Number>> data = DataService.getMostAlertsRooms(classroomList);
-            series.setData(data);
-            // Cập nhật thang đo Y
-            int maxAlerts = data.stream().mapToInt(d -> d.getYValue().intValue()).max().orElse(10);
-            ((NumberAxis)yAxis).setUpperBound(Math.ceil((maxAlerts + 1) / 5.0) * 5);
+            ObservableList<XYChart.Data<String, Number>> alertData = DataService.getMostAlertsRooms(classroomList);
+            int totalRooms = classroomList.size();
+
+            // Lấy top 5 phòng có cảnh báo nhiều nhất
+            List<String> topAlertRooms = alertData.stream()
+                    .map(XYChart.Data::getXValue)
+                    .collect(Collectors.toList());
+
+            // Nếu tổng phòng > 5 thì ta hiển thị 5 phòng này, còn không thì lấy hết phòng
+            List<String> categories;
+            if (totalRooms > 5) {
+                // Nếu topAlertRooms < 5 thì bổ sung thêm phòng từ classroomList để đủ 5 phòng
+                categories = new ArrayList<>(topAlertRooms);
+                for (Classroom c : classroomList) {
+                    if (categories.size() >= 5) break;
+                    if (!categories.contains(c.getRoomNumber())) {
+                        categories.add(c.getRoomNumber());
+                    }
+                }
+            } else {
+                // Hiển thị tất cả phòng khi tổng phòng <= 5
+                categories = classroomList.stream()
+                        .map(Classroom::getRoomNumber)
+                        .collect(Collectors.toList());
+            }
+
+            xAxis.setCategories(FXCollections.observableArrayList(categories));
+
+            // Chuẩn bị data cho series, đảm bảo tất cả phòng trong categories có dữ liệu (0 nếu ko có)
+            List<XYChart.Data<String, Number>> dataWithZero = categories.stream()
+                    .map(room -> {
+                        // Tìm dữ liệu cảnh báo cho phòng này
+                        XYChart.Data<String, Number> d = alertData.stream()
+                                .filter(ad -> ad.getXValue().equals(room))
+                                .findFirst()
+                                .orElse(new XYChart.Data<>(room, 0));
+                        return d;
+                    }).collect(Collectors.toList());
+
+            series.setData(FXCollections.observableArrayList(dataWithZero));
+
+            // Cập nhật thang đo Y dựa trên dữ liệu hiện tại
+            int maxAlerts = dataWithZero.stream()
+                    .mapToInt(d -> d.getYValue().intValue())
+                    .max()
+                    .orElse(10);
+            ((NumberAxis) yAxis).setUpperBound(Math.ceil((maxAlerts + 1) / 5.0) * 5);
         };
 
         updateChart.run();
+
         classroomList.addListener((ListChangeListener<Classroom>) c -> updateChart.run());
         DataService.getAlertHistory().addListener((ListChangeListener<AlertHistory>) c -> updateChart.run());
 
@@ -473,4 +529,5 @@ public class AdminDashboardView {
         container.getChildren().addAll(title, barChart);
         return container;
     }
+
 }

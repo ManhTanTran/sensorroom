@@ -15,9 +15,15 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 import javafx.util.StringConverter;
 
+import javax.swing.*;
+import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -62,11 +68,11 @@ public class ClassroomCreationView {
         TextField idField = new TextField();
         TextField numberField = new TextField();
         ComboBox<String> buildingCombo = new ComboBox<>();
-        buildingCombo.getItems().addAll("HA8", "HA9");
+        buildingCombo.getItems().addAll("Toà HA8", "Toà HA9");
         ComboBox<String> floorCombo = new ComboBox<>();
         floorCombo.getItems().addAll("Tầng 1", "Tầng 2");
         ComboBox<String> typeCombo = new ComboBox<>();
-        typeCombo.getItems().addAll("Phòng học", "Phòng Lab");
+        typeCombo.getItems().addAll("Phòng Thường", "Phòng Lab");
         typeCombo.getSelectionModel().selectFirst();
         // THAY ĐỔI: Loại cảm biến giờ đây khớp với Enum của backend
         ComboBox<Device> tempSensorCombo = createSensorComboBox("TEMPERATURE");
@@ -82,22 +88,22 @@ public class ClassroomCreationView {
         inputGrid.add(buildingCombo, 1, 2);
         inputGrid.add(new Label("Tầng *"), 0, 3);
         inputGrid.add(floorCombo, 1, 3);
-        inputGrid.add(new Label("Loại phòng học *"), 2, 0);
-        inputGrid.add(typeCombo, 3, 0);
-        inputGrid.add(new Label("Nhiệt độ *"), 4, 0);
-        inputGrid.add(tempSensorCombo, 5, 0);
-        inputGrid.add(new Label("Độ ẩm *"), 6, 0);
-        inputGrid.add(humiditySensorCombo, 7, 0);
-        inputGrid.add(new Label("Ánh sáng *"), 4, 1);
-        inputGrid.add(lightSensorCombo, 5, 1);
-        inputGrid.add(new Label("CO2 *"), 6, 1);
-        inputGrid.add(co2SensorCombo, 7, 1);
+        inputGrid.add(new Label("Loại phòng học *"), 5, 0);
+        inputGrid.add(typeCombo, 6, 0);
+        inputGrid.add(new Label("Nhiệt độ *"), 5, 1);
+        inputGrid.add(tempSensorCombo, 6, 1);
+        inputGrid.add(new Label("Độ ẩm *"), 7, 1);
+        inputGrid.add(humiditySensorCombo, 8, 1);
+        inputGrid.add(new Label("Ánh sáng *"), 5, 2);
+        inputGrid.add(lightSensorCombo, 6, 2);
+        inputGrid.add(new Label("CO2 *"), 7, 2);
+        inputGrid.add(co2SensorCombo, 8, 2);
 
 
-        inputGrid.add(new Label("Ghi chú"), 2, 2);
+        inputGrid.add(new Label("Ghi chú"), 5, 3);
         TextField notesArea = new TextField();
         notesArea.setMinHeight(50);
-        inputGrid.add(notesArea, 3, 2);
+        inputGrid.add(notesArea, 6, 3);
 
         StackPane layoutContainer = new StackPane();
         Runnable updateSensorButtons = () -> {
@@ -172,12 +178,23 @@ public class ClassroomCreationView {
 
             apiService.createClassroom(newClassroomRequest)
                     .thenCompose(createdClassroom -> {
+                        // ✅ Format lại ngày tạo
+                        //String today = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                        //System.out.println(today);
+                        //createdClassroom.setCreationDate(today);
+
+                        createdClassroom.setCreationDate(createdClassroom.getCreationDate()); // ép re-format
+                        createdClassroom.postProcess(); // cập nhật các property
+
+                        System.out.println("⏳ formatted: " + createdClassroom.getFormattedCreatedAt());
+
+
                         List<CompletableFuture<Void>> updateFutures = new ArrayList<>();
 
-                        updateDeviceFuture(updateFutures, tempSensorCombo.getValue(), createdClassroom.getId());
-                        updateDeviceFuture(updateFutures, humiditySensorCombo.getValue(), createdClassroom.getId());
-                        updateDeviceFuture(updateFutures, lightSensorCombo.getValue(), createdClassroom.getId());
-                        updateDeviceFuture(updateFutures, co2SensorCombo.getValue(), createdClassroom.getId());
+                        updateDeviceFuture(updateFutures, tempSensorCombo.getValue(), createdClassroom.getClassroomId());
+                        updateDeviceFuture(updateFutures, humiditySensorCombo.getValue(), createdClassroom.getClassroomId());
+                        updateDeviceFuture(updateFutures, lightSensorCombo.getValue(), createdClassroom.getClassroomId());
+                        updateDeviceFuture(updateFutures, co2SensorCombo.getValue(), createdClassroom.getClassroomId());
 
                         return CompletableFuture.allOf(updateFutures.toArray(new CompletableFuture[0]));
                     })
@@ -185,6 +202,8 @@ public class ClassroomCreationView {
                         Platform.runLater(() -> {
                             new Alert(Alert.AlertType.INFORMATION, "Đã tạo và gán thiết bị cho phòng học mới thành công!").show();
                             onBackCallback.run();
+
+                            //new ClassroomManagementView ().refreshView();
                         });
                     })
                     .exceptionally(ex -> {
@@ -201,12 +220,20 @@ public class ClassroomCreationView {
         return mainLayout;
     }
 
-    private void updateDeviceFuture(List<CompletableFuture<Void>> futures, Device device, String classroomId) {
+    private void updateDeviceFuture(List<CompletableFuture<Void>> futures, Device device, long classroomId) {
         if (device != null) {
-            UpdateDeviceRequest updateReq = new UpdateDeviceRequest(classroomId, "ACTIVE");
-            futures.add(apiService.updateDevice(device.getId(), updateReq));
+            UpdateDeviceRequest updateReq = new UpdateDeviceRequest(
+                    device.getName(),
+                    device.getType(),
+                    "ACTIVE",
+                    device.getDataCycle() != null ? device.getDataCycle() : 60,
+                    device.getNotes() != null ? device.getNotes() : "",
+                    classroomId
+            );
+            futures.add(apiService.updateDevice(device.getDeviceId(), updateReq));
         }
     }
+
 
     private ComboBox<Device> createSensorComboBox(String type) {
         ComboBox<Device> comboBox = new ComboBox<>();

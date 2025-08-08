@@ -1,10 +1,17 @@
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/MainApp.java
+/Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/api/DeviceApi.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/controller/MainViewController.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/model/AlertHistory.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/model/Classroom.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/model/ClassroomMeasurement.java
+/Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/model/CreateClassroomRequest.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/model/Device.java
+/Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/model/DeviceData.java
+/Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/model/DeviceDataMerged.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/model/Role.java
+/Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/model/Roomtype.java
+/Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/model/UpdateClassroomRequest.java
+/Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/model/UpdateDeviceRequest.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/model/User.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/service/ApiService.java
 /Users/giangnguyendohoang/IdeaProjects/sensorroom/sensor-ui/src/main/java/com/example/smartroom/service/AuthenticationService.java

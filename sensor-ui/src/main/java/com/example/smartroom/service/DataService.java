@@ -37,7 +37,7 @@ public class DataService {
 
     private static final ObservableList<Classroom> allClassrooms = FXCollections.observableArrayList();
 
-    private static ObservableList<AlertHistory> generatedAlerts = FXCollections.observableArrayList();
+    private static final ObservableList<AlertHistory> generatedAlerts = FXCollections.observableArrayList();
 
     private static final ObservableList<DeviceData> allDeviceData = FXCollections.observableArrayList();
 
@@ -118,7 +118,7 @@ public class DataService {
                     classroom.postProcess(); // ✅ Update chỉ số (temp, humidity,...)
 
                     // Debug:
-                    System.out.println("Phòng " + classroom.getRoomNumber() + " có " + devicesInThisRoom.size() + " thiết bị.");
+                    //System.out.println("Phòng " + classroom.getRoomNumber() + " có " + devicesInThisRoom.size() + " thiết bị.");
                 }
 
                 classrooms.setAll(classroomList);
@@ -170,12 +170,145 @@ public class DataService {
         }
     }
 
-    public static ObservableList<Classroom> getClassroomsForKtvFromApi(List<String> managedIds) {
+    public static ObservableList<Classroom> getClassroomsForKtvFromApi(List<Classroom> managedRooms) {
         ObservableList<Classroom> all = getAllClassroomsFromApi();
 
-        return all.filtered(classroom -> managedIds.contains(classroom.getId()));
+        Set<String> managedRoomNumbers = managedRooms.stream()
+                .map(Classroom::getRoomNumber)
+                .collect(Collectors.toSet());
+
+        return all.filtered(classroom -> managedRoomNumbers.contains(classroom.getRoomNumber()));
     }
 
+    public static Classroom getClassroomByNumber(String roomNumber) {
+        return allClassrooms.stream()
+                .filter(c -> c.getRoomNumber().equals(roomNumber))
+                .findFirst()
+                .orElse(null);
+    }
+
+
+
+    public static ObservableList<Device> getAllDevices() { return allDevices; }
+    public static ObservableList<Classroom> getAllClassrooms() { return allClassrooms; }
+    public static void setAllClassrooms(List<Classroom> classrooms) {
+        allClassrooms.setAll(classrooms);
+    }
+    public static void setAllDevices(List<Device> devices) {
+        List<Device> filtered = devices.stream()
+                .filter(d -> d.getDeviceId() != null)
+                .toList();
+        Platform.runLater(() -> {
+            allDevices.clear();
+            allDevices.addAll(filtered);
+        });
+    }
+
+    public static void addClassroom(Classroom classroom) { allClassrooms.add(classroom); }
+    public static List<Device> getDevicesByRoomId(String roomId) { return getAllDevices().stream().filter(device -> roomId.equals(device.getRoom())).collect(Collectors.toList()); }
+    /*public static ObservableList<Device> getDevicesForKtv(List<Long> managedRoomIds) {
+        ApiService api = new ApiService();
+        ObservableList<Device> allDevices = FXCollections.observableArrayList();
+
+        for (Long roomId : managedRoomIds) {
+            List<Device> devices = api.fetchDevicesByClassroomIdSync(roomId);
+            allDevices.addAll(devices);
+        }
+
+        return allDevices;
+    }*/
+
+    public static ObservableList<Device> getDevicesForKtv(List<Classroom> managedRooms) {
+        Set<String> managedRoomNumbers = managedRooms.stream()
+                .map(Classroom::getRoomNumber)
+                .collect(Collectors.toSet());
+
+        return getAllDevices().filtered(device ->
+                managedRoomNumbers.contains(device.getRoom())
+        );
+    }
+
+    public static ObservableList<AlertHistory> getAlertsForKtv(List<Device> managedDevices) {
+        Set<String> managedDeviceIds = managedDevices.stream()
+                .map(Device::getDeviceId)
+                .collect(Collectors.toSet());
+
+        return getAlertHistory().filtered(alert ->
+                managedDeviceIds.contains(alert.deviceIdProperty().get())
+        );
+    }
+
+
+    /**
+     * SỬA LỖI LOGIC TẠI ĐÂY
+     */
+    public static ObservableList<Classroom> getClassroomsForKtv(List<Classroom> managedRooms) {
+        Set<String> managedIds = managedRooms.stream()
+                .map(Classroom::getId)
+                .collect(Collectors.toSet());
+
+        return allClassrooms.stream()
+                .filter(c -> managedIds.contains(c.getId()))
+                .collect(Collectors.toCollection(FXCollections::observableArrayList));
+    }
+
+
+    //public static ObservableList<AlertHistory> getAlertHistory() { return alertHistory; }
+
+
+    public static void regenerateAlertsFromDeviceData() {
+        Platform.runLater(() -> {
+            List<DeviceData> dataList = new ArrayList<>(getAllDeviceData()).stream()
+                    .filter(d -> d.getCreatedAt() != null && d.getCreatedAt().length() >= 16)
+                    .filter(d -> {
+                        try {
+                            LocalDateTime dataTime = LocalDateTime.parse(d.getCreatedAt(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                            return Duration.between(dataTime, LocalDateTime.now()).toMinutes() <= 4320;
+                        } catch (Exception e) {
+                            System.err.println("⛔️ Parse lỗi với: " + d.getCreatedAt());
+                            return false;
+                        }
+                    })
+                    .toList();
+
+            List<AlertHistory> newAlerts = new ArrayList<>();
+
+            for (DeviceData d : dataList) {
+                String timeFormatted = d.getCreatedAt().substring(0, 16);
+                String roomId = String.valueOf(d.getClassroomId());
+
+                if (d.getTemperature() != null && (d.getTemperature() < 18 || d.getTemperature() > 30)) {
+                    newAlerts.add(new AlertHistory(timeFormatted, getDeviceIdByType(roomId, "TEMPERATURE"), "Nhiệt độ", "Vượt ngưỡng"));
+                }
+                if (d.getHumidity() != null && (d.getHumidity() < 35 || d.getHumidity() > 70)) {
+                    newAlerts.add(new AlertHistory(timeFormatted, getDeviceIdByType(roomId, "HUMIDITY"), "Độ ẩm", "Vượt ngưỡng"));
+                }
+                if (d.getLight() != null && (d.getLight() < 200 || d.getLight() > 1500)) {
+                    newAlerts.add(new AlertHistory(timeFormatted, getDeviceIdByType(roomId, "LIGHT"), "Ánh sáng", "Vượt ngưỡng"));
+                }
+                if (d.getCo2() != null && d.getCo2() > 1500) {
+                    newAlerts.add(new AlertHistory(timeFormatted, getDeviceIdByType(roomId, "CO2"), "CO2", "Vượt ngưỡng"));
+                }
+            }
+
+            generatedAlerts.setAll(newAlerts); // 🔥 Chart sẽ hoạt động ổn định từ đây
+            //System.out.println("✅ Regenerated alerts: " + newAlerts.size());
+        });
+    }
+
+    private static String getDeviceIdByType(String classroomId, String type) {
+        Long roomId = Long.parseLong(classroomId);
+        return getAllDevices().stream()
+                .filter(d -> type.equals(d.getType()) && d.getClassroomId() != null && d.getClassroomId().equals(roomId))
+                .map(Device::getDeviceId)
+                .findFirst()
+                .orElse("Không rõ");
+    }
+
+
+    public static ObservableList<AlertHistory> getAlertHistory() {
+        return generatedAlerts;
+    }
 
     public enum AirQuality { TỐT, KHÁ, KÉM }
 
@@ -237,48 +370,11 @@ public class DataService {
 
         double co2 = classroom.getCo2();
         // CO2 ở mức có hại (> 1500)
-        if (co2 > 1500) return true;
+        return co2 > 1500;
 
         // Nếu tất cả các chỉ số đều trong ngưỡng chấp nhận được
-        return false;
-    }
-    public static ObservableList<PieChart.Data> getRoomQualityDistribution(ObservableList<Classroom> classrooms) {
-        Map<AirQuality, Long> qualityCounts = classrooms.stream().collect(Collectors.groupingBy(DataService::getAirQuality, Collectors.counting()));
-        return qualityCounts.entrySet().stream().map(entry -> new PieChart.Data(entry.getKey().toString().replace("_", " "), entry.getValue())).collect(Collectors.toCollection(FXCollections::observableArrayList));
     }
 
-    public static ObservableList<Device> getAllDevices() { return allDevices; }
-    public static ObservableList<Classroom> getAllClassrooms() { return allClassrooms; }
-    public static void setAllClassrooms(List<Classroom> classrooms) {
-        allClassrooms.setAll(classrooms);
-    }
-    public static void setAllDevices(List<Device> devices) {
-        allDevices.setAll(devices);
-    }
-    public static void addClassroom(Classroom classroom) { allClassrooms.add(classroom); }
-    public static List<Device> getDevicesByRoomId(String roomId) { return getAllDevices().stream().filter(device -> roomId.equals(device.getRoom())).collect(Collectors.toList()); }
-    public static ObservableList<Device> getDevicesForKtv(List<Long> managedRoomIds) {
-        ApiService api = new ApiService();
-        ObservableList<Device> allDevices = FXCollections.observableArrayList();
-
-        for (Long roomId : managedRoomIds) {
-            List<Device> devices = api.fetchDevicesByClassroomIdSync(roomId);
-            allDevices.addAll(devices);
-        }
-
-        return allDevices;
-    }
-
-    /**
-     * SỬA LỖI LOGIC TẠI ĐÂY
-     */
-    public static ObservableList<Classroom> getClassroomsForKtv(List<String> managedRooms) {
-        return allClassrooms.stream()
-                .filter(classroom -> managedRooms.contains(classroom.getId()))
-                .collect(Collectors.toCollection(FXCollections::observableArrayList));
-    }
-    public static ObservableList<PieChart.Data> getSensorTypeData(ObservableList<Device> devices) { Map<String, Long> typeCounts = devices.stream().collect(Collectors.groupingBy(Device::getType, Collectors.counting())); return typeCounts.entrySet().stream().map(entry -> new PieChart.Data(entry.getKey(), entry.getValue())).collect(Collectors.toCollection(FXCollections::observableArrayList)); }
-    //public static ObservableList<AlertHistory> getAlertHistory() { return alertHistory; }
     public static ObservableList<XYChart.Data<Number, String>> getTopQualityRooms(ObservableList<Classroom> classrooms) {
         return classrooms.stream()
                 .filter(c -> "ACTIVE".equals(c.statusProperty().get()))
@@ -288,58 +384,9 @@ public class DataService {
                 .collect(Collectors.toCollection(FXCollections::observableArrayList));
     }
 
-    public static void regenerateAlertsFromDeviceData() {
-        Platform.runLater(() -> {
-            List<DeviceData> dataList = new ArrayList<>(getAllDeviceData()).stream()
-                    .filter(d -> d.getCreatedAt() != null && d.getCreatedAt().length() >= 16)
-                    .filter(d -> {
-                        try {
-                            LocalDateTime dataTime = LocalDateTime.parse(d.getCreatedAt(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-                            return Duration.between(dataTime, LocalDateTime.now()).toMinutes() <= 1440;
-                        } catch (Exception e) {
-                            System.err.println("⛔️ Parse lỗi với: " + d.getCreatedAt());
-                            return false;
-                        }
-                    })
-                    .toList();
-
-            List<AlertHistory> newAlerts = new ArrayList<>();
-
-            for (DeviceData d : dataList) {
-                String timeFormatted = d.getCreatedAt().substring(0, 16);
-                String roomId = String.valueOf(d.getClassroomId());
-
-                if (d.getTemperature() != null && (d.getTemperature() < 18 || d.getTemperature() > 30)) {
-                    newAlerts.add(new AlertHistory(timeFormatted, getDeviceIdByType(roomId, "TEMPERATURE"), "Nhiệt độ", "Vượt ngưỡng"));
-                }
-                if (d.getHumidity() != null && (d.getHumidity() < 35 || d.getHumidity() > 70)) {
-                    newAlerts.add(new AlertHistory(timeFormatted, getDeviceIdByType(roomId, "HUMIDITY"), "Độ ẩm", "Vượt ngưỡng"));
-                }
-                if (d.getLight() != null && (d.getLight() < 200 || d.getLight() > 1500)) {
-                    newAlerts.add(new AlertHistory(timeFormatted, getDeviceIdByType(roomId, "LIGHT"), "Ánh sáng", "Vượt ngưỡng"));
-                }
-                if (d.getCo2() != null && d.getCo2() > 1500) {
-                    newAlerts.add(new AlertHistory(timeFormatted, getDeviceIdByType(roomId, "CO2"), "CO2", "Vượt ngưỡng"));
-                }
-            }
-
-            generatedAlerts.setAll(newAlerts); // 🔥 Chart sẽ hoạt động ổn định từ đây
-            System.out.println("✅ Regenerated alerts: " + newAlerts.size());
-        });
-    }
-
-    private static String getDeviceIdByType(String classroomId, String type) {
-        Long roomId = Long.parseLong(classroomId);
-        return getAllDevices().stream()
-                .filter(d -> type.equals(d.getType()) && d.getClassroomId() != null && d.getClassroomId().equals(roomId))
-                .map(Device::getDeviceId)
-                .findFirst()
-                .orElse("Không rõ");
-    }
-
-
-    public static ObservableList<AlertHistory> getAlertHistory() {
-        return generatedAlerts;
+    public static ObservableList<PieChart.Data> getRoomQualityDistribution(ObservableList<Classroom> classrooms) {
+        Map<AirQuality, Long> qualityCounts = classrooms.stream().collect(Collectors.groupingBy(DataService::getAirQuality, Collectors.counting()));
+        return qualityCounts.entrySet().stream().map(entry -> new PieChart.Data(entry.getKey().toString().replace("_", " "), entry.getValue())).collect(Collectors.toCollection(FXCollections::observableArrayList));
     }
 
     public static ObservableList<XYChart.Data<String, Number>> getMostAlertsRooms(ObservableList<Classroom> classrooms) {

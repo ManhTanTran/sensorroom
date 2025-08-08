@@ -66,6 +66,7 @@ public class Device {
 
     // --- Basic getter để xử lý logic ---
     public long getId() { return id != null ? id : -1; }
+    public String getName() { return name; }
     public Long getClassroomId() { return classroomId; }
     public String getRoom() { return classroomName; }
     public String getType() { return type; }
@@ -74,6 +75,8 @@ public class Device {
     public String getRawType() {
         return this.type;
     }
+    public Integer getDataCycle() { return dataCycle; }
+    public String getNotes () { return notes; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
 

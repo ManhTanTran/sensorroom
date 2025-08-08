@@ -1,12 +1,11 @@
 package com.example.smartroom.view;
 
-import com.example.smartroom.model.Classroom;
-import com.example.smartroom.model.Device;
-import com.example.smartroom.model.Role;
-import com.example.smartroom.model.User;
+import com.example.smartroom.model.*;
+import com.example.smartroom.service.ApiService;
 import com.example.smartroom.service.DataService;
 import com.example.smartroom.service.UserSession;
 import com.example.smartroom.util.ResourceLoader;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
@@ -30,21 +29,28 @@ import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class ClassroomManagementView {
 
     private StackPane mainContentPane;
     private Node classroomListView;
+    private ObservableList<Classroom> classroomData = DataService.getAllClassrooms();
 
     public Node getView() {
-        mainContentPane = new StackPane();
-        classroomListView = createClassroomListView();
-        mainContentPane.getChildren().add(classroomListView);
-        return mainContentPane;
+        this.mainContentPane = new StackPane();
+        this.classroomListView = createClassroomListView();
+        this.mainContentPane.getChildren().add(this.classroomListView);
+        return this.mainContentPane;
     }
+
 
     private Node createClassroomListView() {
         VBox layout = new VBox(20);
@@ -52,25 +58,27 @@ public class ClassroomManagementView {
         layout.getStyleClass().add("management-view-container");
 
         User currentUser = UserSession.getInstance().getUser();
-        ObservableList<Classroom> classroomData = FXCollections.observableArrayList();
-        ObservableList<Classroom> fromApi;
+        //ObservableList<Classroom> classroomData = FXCollections.observableArrayList();
 
         DataService.fetchClassroomsWithDevices().thenAccept(allClassrooms -> {
             ObservableList<Classroom> filteredClassrooms;
             if (currentUser.role() == Role.ADMIN) {
                 filteredClassrooms = allClassrooms;
             } else {
+                Set<String> managedRoomNumbers = currentUser.managedRooms().stream()
+                        .map(Classroom::getRoomNumber)
+                        .collect(Collectors.toSet());
                 filteredClassrooms = allClassrooms.stream()
-                        .filter(c -> currentUser.managedRooms().contains(c.getRoomNumber()))
+                        .filter(c -> managedRoomNumbers.contains(c.getRoomNumber()))
                         .collect(FXCollections::observableArrayList, ObservableList::add, ObservableList::addAll);
             }
 
             for (int i = 0; i < filteredClassrooms.size(); i++) {
                 Classroom c = filteredClassrooms.get(i);
-                if (c.creationDateProperty().get() == null || c.creationDateProperty().get().isEmpty()) {
-                    // Giả lập ngày tạo: hôm nay trừ i ngày
-                    java.time.LocalDate fakeDate = java.time.LocalDate.now().minusDays(i);
-                    c.setCreationDate(fakeDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                c.postProcess();
+                if (c.formattedCreatedAtProperty().get() == null || c.formattedCreatedAtProperty().get().isEmpty()) {
+                    String fake = LocalDate.now().minusDays(i).format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                    c.formattedCreatedAtProperty().set(fake);
                 }
             }
 
@@ -96,7 +104,8 @@ public class ClassroomManagementView {
 
     private HBox createFilterBox(FilteredList<Classroom> filteredData) {
         HBox filterBox = new HBox(15);
-        filterBox.getStyleClass().add("filter-pane");
+        filterBox.setAlignment(Pos.CENTER_LEFT);
+        filterBox.getStyleClass().add("filter-box");
 
         filterBox.getChildren().add(new Label("Tìm kiếm:"));
 
@@ -108,8 +117,17 @@ public class ClassroomManagementView {
 
         ComboBox<String> buildingFilter = new ComboBox<>();
         buildingFilter.setPromptText("Tòa nhà");
-        buildingFilter.getItems().addAll("Tất cả", "Tòa A", "Tòa B", "Tòa C");
+        buildingFilter.getItems().addAll("Tất cả", "Tòa HA8", "Tòa HA9");
         buildingFilter.setValue("Tất cả");
+
+        ComboBox<String> floorFilter = new ComboBox<>();
+        floorFilter.setPromptText("Tầng");
+        floorFilter.getItems().addAll("Tất cả", "1", "2");
+        floorFilter.setValue("Tất cả");
+        ComboBox<String> roomTypeFilter = new ComboBox<>();
+        roomTypeFilter.setPromptText("Loại phòng");
+        roomTypeFilter.getItems().addAll("Tất cả", "Phòng Lab", "Phòng Thường");
+        roomTypeFilter.setValue("Tất cả");
 
         FontIcon searchIcon = new FontIcon(FontAwesomeSolid.SEARCH);
         searchIcon.setIconSize(14);
@@ -121,30 +139,45 @@ public class ClassroomManagementView {
         Button createButton = new Button(" Tạo mới", plusIcon);
         createButton.setContentDisplay(ContentDisplay.LEFT);
         createButton.getStyleClass().add("create-button");
-        createButton.setOnAction(e -> showCreateNewClassroomView());
+        User currentUser = UserSession.getInstance().getUser();
+        createButton.setDisable(currentUser.role() != Role.ADMIN);
 
+        createButton.setOnAction(e -> {
+            refreshView();
+            showCreateNewClassroomView();
+        });
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-
-
-        filterBox.getChildren().addAll(idFilter, roomNumberFilter, buildingFilter, searchButton, spacer, createButton);
+        filterBox.getChildren().addAll(
+                idFilter, roomNumberFilter,
+                new Label ("Toà nhà: "), buildingFilter,
+                new Label ("Tầng: "), floorFilter,
+                new Label ("Loại phòng: "), roomTypeFilter, searchButton, spacer, createButton
+        );
 
         searchButton.setOnAction(e -> {
             String idVal = idFilter.getText().trim().toLowerCase();
             String roomNumVal = roomNumberFilter.getText().trim().toLowerCase();
             String buildingVal = buildingFilter.getValue();
+            String floorVal = floorFilter.getValue();
+            String roomTypeVal = roomTypeFilter.getValue();
 
             filteredData.setPredicate(classroom -> {
                 boolean idMatch = idVal.isEmpty() || classroom.idProperty().get().toLowerCase().contains(idVal);
-                boolean roomNumMatch = roomNumVal.isEmpty() || classroom.displayRoomTypeProperty().get().toLowerCase().contains(roomNumVal);
-                boolean buildingMatch = buildingVal == null || buildingVal.equals("Tất cả") || classroom.buildingProperty().get().equals(buildingVal);
-                return idMatch && roomNumMatch && buildingMatch;
+                boolean roomNumMatch = roomNumVal.isEmpty() || classroom.roomNumberProperty().get().toLowerCase().contains(roomNumVal);
+                boolean buildingMatch = buildingVal.equals("Tất cả") || classroom.buildingProperty().get().equalsIgnoreCase(buildingVal);
+                boolean floorMatch = floorVal.equals("Tất cả") || classroom.floorProperty().get().equalsIgnoreCase(floorVal);
+                boolean roomTypeMatch = roomTypeVal.equals("Tất cả") || classroom.displayRoomTypeProperty().get().equalsIgnoreCase(roomTypeVal);
+
+                return idMatch && roomNumMatch && buildingMatch && floorMatch && roomTypeMatch;
             });
         });
+
         return filterBox;
     }
+
 
     private TableView<Classroom> createClassroomTable(FilteredList<Classroom> data) {
         TableView<Classroom> table = new TableView<>(data);
@@ -180,8 +213,17 @@ public class ClassroomManagementView {
         TableColumn<Classroom, String> floorCol = createCenteredColumn("Tầng", "floor");
         TableColumn<Classroom, String> typeCol = createCenteredColumn("Loại phòng", "displayRoomType");
         TableColumn<Classroom, Integer> deviceCountCol = createCenteredColumn("Số Thiết Bị", "deviceCount");
-        TableColumn<Classroom, String> createdDateCol = createCenteredColumn("Ngày tạo", "creationDate");
-
+        TableColumn<Classroom, String> createdDateCol = new TableColumn<>("Ngày tạo");
+        createdDateCol.setCellValueFactory(cellData ->
+                cellData.getValue().formattedCreatedAtProperty());
+        createdDateCol.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                System.out.println("Cell date shown: " + item);
+                setText(empty || item == null ? null : item);
+            }
+        });
         TableColumn<Classroom, String> statusCol = createStatusToggleColumn("Trạng thái");
         TableColumn<Classroom, Void> actionCol = createActionColumn();
 
@@ -219,9 +261,9 @@ public class ClassroomManagementView {
 
                         return switch (type) {
                             case "TEMPERATURE" -> value < 18 || value > 30;
-                            case "HUMIDITY"    -> value < 35 || value > 70;
-                            case "LIGHT"       -> value < 200 || value > 1500;
-                            case "CO2"         -> value > 1500;
+                            case "HUMIDITY" -> value < 35 || value > 70;
+                            case "LIGHT" -> value < 200 || value > 1500;
+                            case "CO2" -> value > 1500;
                             default -> false;
                         };
                     } catch (Exception e) {
@@ -230,12 +272,12 @@ public class ClassroomManagementView {
                 });
 
                 if (hasWarning) {
-                    setStyle("-fx-background-color: #FCA5A5;"); // đỏ nhạt
+                    setStyle("-fx-background-color: #FCA5A5;");
                 } else {
                     setStyle(""); // reset
                 }
 
-                System.out.println("Phòng: " + classroom.getRoomNumber() + " có thiết bị: " + devices.size());
+                //System.out.println("Phòng: " + classroom.getRoomNumber() + " có thiết bị: " + devices.size());
                 devices.forEach(d -> System.out.println(d.getType() + ": " + d.valueProperty().get()));
 
             }
@@ -347,13 +389,16 @@ public class ClassroomManagementView {
                 // Hành động
                 viewBtn.setOnAction(event -> {
                     if (getTableRow() != null && getTableRow().getItem() != null) {
+                        refreshView();
                         showClassroomDetailView(getTableRow().getItem());
                     }
                 });
 
                 editBtn.setOnAction(event -> {
                     if (getTableRow() != null && getTableRow().getItem() != null) {
+
                         showEditClassroomView(getTableRow().getItem());
+
                     }
                 });
 
@@ -367,10 +412,53 @@ public class ClassroomManagementView {
 
                         Optional<ButtonType> result = confirm.showAndWait();
                         if (result.isPresent() && result.get() == ButtonType.OK) {
-                            DataService.getAllClassrooms().remove(classroom);
+                            List<Device> affectedDevices = DataService.getAllDevices().stream()
+                                    .filter(d -> classroom.getRoomNumber().equals(d.getRoom()))
+                                    .collect(Collectors.toList());
+
+                            ApiService api = new ApiService();
+                            List<CompletableFuture<Void>> updateFutures = new ArrayList<>();
+
+                            for (Device device : affectedDevices) {
+                                UpdateDeviceRequest updateReq = new UpdateDeviceRequest(
+                                        device.getName(),
+                                        device.getType(),
+                                        "INACTIVE",
+                                        device.getDataCycle() != null ? device.getDataCycle() : 60,
+                                        device.getNotes() != null ? device.getNotes() : "",
+                                        null);
+                                CompletableFuture<Void> updateFuture = api.updateDevice(device.getDeviceId(), updateReq);
+                                updateFutures.add(updateFuture);
+                                //System.out.println("Update device " + device.getDeviceId() + updateReq.getClassroomId());
+
+                            }
+
+                            CompletableFuture.allOf(updateFutures.toArray(new CompletableFuture[0]))
+                                    .thenRun(() -> {
+                                        try {
+                                            // Delay nhỏ để đảm bảo backend xử lý xong các update
+                                            Thread.sleep(300); // 0.3s
+                                        } catch (InterruptedException e) {
+                                            e.printStackTrace();
+                                        }
+                                    })
+                                    .thenCompose(v -> api.deleteClassroom(classroom.getClassroomId()))
+                                    .thenRun(() -> Platform.runLater(() -> {
+                                        DataService.getAllClassrooms().remove(classroom);
+                                        refreshView();
+                                        new Alert(Alert.AlertType.INFORMATION, "Xóa phòng học và hủy gán thiết bị thành công!").show();
+                                    }))
+                                    .exceptionally(ex -> {
+                                        Platform.runLater(() -> {
+                                            ex.printStackTrace();
+                                            new Alert(Alert.AlertType.ERROR, "Lỗi khi xóa phòng học: " + ex.getMessage()).show();
+                                        });
+                                        return null;
+                                    });
                         }
                     }
                 });
+
             }
 
             @Override
@@ -428,11 +516,21 @@ public class ClassroomManagementView {
     }
 
     private void showClassroomListView() {
-        mainContentPane.getChildren().setAll(classroomListView);
+        //this.classroomListView = createClassroomListView();
+        // Tái tạo view mới
+        mainContentPane.getChildren().setAll(classroomListView); // Set lại
     }
 
     private void showCreateNewClassroomView() {
-        ClassroomCreationView creationView = new ClassroomCreationView(this::showClassroomListView);
+        // Tạo callback để khi tạo xong, quay về list view và refresh
+        Runnable onBackCallback = () -> {
+            Platform.runLater(() -> {
+                refreshView();         // Tạo lại list view mới nhất
+                showClassroomListView();  // Hiển thị list view
+            });
+        };
+
+        ClassroomCreationView creationView = new ClassroomCreationView(onBackCallback);
         Parent creationRoot = creationView.getView();
 
         VBox creationContainer = new VBox(creationRoot);
@@ -442,12 +540,27 @@ public class ClassroomManagementView {
     }
 
     private void showEditClassroomView(Classroom classroom) {
-        ClassroomEditView editView = new ClassroomEditView(this::showClassroomListView, classroom);
+        Runnable onBackCallback = () -> {
+            // Quay lại màn hình danh sách phòng
+            Platform.runLater(() -> {
+                refreshView();  // Tạo lại list view, lấy dữ liệu mới nhất
+                showClassroomListView(); // Đổi UI về list view
+            });
+        };
+
+        ClassroomEditView editView = new ClassroomEditView(onBackCallback, classroom);
         Parent editRoot = editView.getView();
 
         VBox editContainer = new VBox(editRoot);
         editContainer.setPadding(new Insets(20));
-
         mainContentPane.getChildren().setAll(editContainer);
     }
+
+
+    public void refreshView() {
+
+        this.classroomListView = createClassroomListView();
+        this.mainContentPane.getChildren().setAll(this.classroomListView);
+    }
+
 }

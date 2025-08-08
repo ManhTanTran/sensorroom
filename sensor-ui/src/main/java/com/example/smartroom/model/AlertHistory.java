@@ -54,4 +54,10 @@ public class AlertHistory {
     public String getCreatedAt() {
         return time.get();
     }
+
+    // Convenience getters
+    public String getTime() { return time.get(); }
+    public String getDeviceId() { return deviceId.get(); }
+    public String getAlertType() { return alertType.get(); }
+    public String getWarning() { return warning.get(); }
 }

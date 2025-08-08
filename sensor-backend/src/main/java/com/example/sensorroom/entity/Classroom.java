@@ -29,7 +29,7 @@ public class Classroom {
     @Column(name = "classroom_name", nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(name = "building", nullable = false)
     private String building;
 
     @Column(nullable = false)
@@ -53,7 +53,7 @@ public class Classroom {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "classroom", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "classroom"/*, cascade = CascadeType.ALL, orphanRemoval = true*/)
     private List<Device> devices;
 
     @ManyToMany

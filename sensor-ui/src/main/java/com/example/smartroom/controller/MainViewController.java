@@ -26,7 +26,7 @@ public class MainViewController {
 
     public void showMainStage() {
         Stage mainStage = new Stage();
-        mainStage.setTitle("Hệ thống Sensor Room");
+        mainStage.setTitle("Hệ thống Smart Room");
 
         BorderPane root = new BorderPane();
         Scene scene = new Scene(root, 1600, 900); // Tăng kích thước cửa sổ
@@ -66,12 +66,13 @@ public class MainViewController {
         contentArea.getChildren().setAll(view);
     }
 
+    /*
     private HBox createHeader() {
         HBox header = new HBox(1000);
         header.getStyleClass().add("header-pane");
         header.setAlignment(Pos.CENTER_LEFT);
 
-        Text logo = new Text("Hệ thống Sensor Room");
+        Text logo = new Text("Hệ thống Smart Room");
         logo.getStyleClass().add("header-title");
 
         //Region spacer = new Region();
@@ -87,7 +88,58 @@ public class MainViewController {
 
         header.getChildren().addAll(logo, userLabel);
         return header;
+    }*/
+
+    private HBox createHeader() {
+        HBox header = new HBox(10);
+        header.getStyleClass().add("header-pane");
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        Text logo = new Text("Hệ thống Smart Room");
+        logo.getStyleClass().add("header-title");
+
+        User currentUser = UserSession.getInstance().getUser();
+        FontIcon userIcon = new FontIcon(FontAwesomeSolid.USER);
+        userIcon.setIconSize(18);
+        userIcon.getStyleClass().add("sidebar-icon");
+
+        Label userLabel = new Label(currentUser.fullName() + " (" + currentUser.role() + ")", userIcon);
+        userLabel.getStyleClass().add("chart-title");
+        userLabel.setGraphicTextGap(8);
+
+        // Tạo nút logout với icon thoát
+        FontIcon logoutIcon = new FontIcon(FontAwesomeSolid.SIGN_OUT_ALT);
+        logoutIcon.setIconSize(18);
+        logoutIcon.getStyleClass().add("sidebar-icon");
+        Button logoutButton = new Button("", logoutIcon);
+        logoutButton.getStyleClass().add("logout-button");
+        logoutButton.setTooltip(new Tooltip("Đăng xuất"));
+        logoutButton.setOnAction(e -> {
+            Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmAlert.setTitle("Xác nhận đăng xuất");
+            confirmAlert.setHeaderText(null);
+            confirmAlert.setContentText("Bạn có chắc chắn muốn đăng xuất không?");
+
+            confirmAlert.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.OK) {
+                    // Đóng cửa sổ hiện tại
+                    Stage currentStage = (Stage) header.getScene().getWindow();
+                    currentStage.close();
+
+                    // Mở lại cửa sổ đăng nhập
+                    Stage loginStage = new Stage();
+                    new LoginView(loginStage).show();
+                }
+            });
+        });
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        header.getChildren().addAll(logo, spacer, userLabel, logoutButton);
+        return header;
     }
+
 
     private VBox createSideBar() {
         VBox sideBar = new VBox(10);
@@ -161,12 +213,15 @@ public class MainViewController {
             // KIỂM TRA SỐ LƯỢNG PHÒNG KTV QUẢN LÝ
             if (currentUser.managedRooms().size() > 1) {
                 // KTV quản lý nhiều phòng
+                currentUser.managedRooms().forEach(c -> System.out.println(c.getRoomNumber()));
                 return new KtvDashboardView().getView();
             } else {
                 // KTV quản lý 1 phòng
                 // Lấy thông tin phòng duy nhất đó
+                System.out.println(currentUser.managedRooms().get(0).getRoomNumber());
+
                 Classroom singleRoom = DataService.getAllClassrooms().stream()
-                        .filter(c -> currentUser.managedRooms().get(0).equals(c.getId()))
+                        .filter(c -> currentUser.managedRooms().get(0).getRoomNumber().equals(c.getRoomNumber()))
                         .findFirst().orElse(null);
 
                 if (singleRoom != null) {

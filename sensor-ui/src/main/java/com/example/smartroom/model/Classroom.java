@@ -4,6 +4,9 @@ import com.example.smartroom.service.DataService;
 import com.google.gson.annotations.SerializedName;
 import javafx.beans.property.*;
 
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class Classroom {
@@ -13,7 +16,7 @@ public class Classroom {
     private String building;
     private String floor;
     private String status;
-    private String createdAt;
+    private String createdAt;  // Raw string từ server hoặc set bằng tay
     private int deviceCount;
 
     @SerializedName("roomtype")
@@ -21,23 +24,25 @@ public class Classroom {
 
     private String displayRoomType;
 
-    private transient StringProperty fxId = new SimpleStringProperty();
-    private transient StringProperty fxRoomNumber = new SimpleStringProperty();
-    private transient StringProperty fxBuilding = new SimpleStringProperty();
-    private transient StringProperty fxFloor = new SimpleStringProperty();
-    private transient IntegerProperty fxDeviceCount = new SimpleIntegerProperty();
-    private transient StringProperty fxCreatedAt = new SimpleStringProperty();
-    private transient StringProperty fxStatus = new SimpleStringProperty();
-    private transient StringProperty fxRoomType = new SimpleStringProperty();
-    private transient StringProperty fxDisplayRoomType = new SimpleStringProperty(); // THÊM MỚI
-    private transient StringProperty lastUpdated = new SimpleStringProperty();
+    private final transient StringProperty fxId = new SimpleStringProperty();
+    private final transient StringProperty fxRoomNumber = new SimpleStringProperty();
+    private final transient StringProperty fxBuilding = new SimpleStringProperty();
+    private final transient StringProperty fxFloor = new SimpleStringProperty();
+    private final transient IntegerProperty fxDeviceCount = new SimpleIntegerProperty();
+    private final transient StringProperty fxStatus = new SimpleStringProperty();
+    private final transient StringProperty fxRoomType = new SimpleStringProperty();
+    private final transient StringProperty fxDisplayRoomType = new SimpleStringProperty();
+    private final transient StringProperty formattedCreatedAt = new SimpleStringProperty();
+    private final transient StringProperty lastUpdated = new SimpleStringProperty();
 
-    private transient DoubleProperty temperature = new SimpleDoubleProperty(0);
-    private transient DoubleProperty humidity = new SimpleDoubleProperty(0);
-    private transient DoubleProperty lux = new SimpleDoubleProperty(0);
-    private transient DoubleProperty co2 = new SimpleDoubleProperty(0);
+    private final transient DoubleProperty temperature = new SimpleDoubleProperty(0);
+    private final transient DoubleProperty humidity = new SimpleDoubleProperty(0);
+    private final transient DoubleProperty lux = new SimpleDoubleProperty(0);
+    private final transient DoubleProperty co2 = new SimpleDoubleProperty(0);
 
-    public Classroom() {}
+    private transient List<Device> devicesInRoom = List.of();
+
+    public Classroom() { /*setCreationDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));*/ }
 
     public void postProcess() {
         fxId.set(code);
@@ -45,9 +50,10 @@ public class Classroom {
         fxBuilding.set(building);
         fxFloor.set(floor);
         fxDeviceCount.set(deviceCount);
-        fxCreatedAt.set(createdAt);
         fxStatus.set(status);
         fxRoomType.set(roomType);
+
+        formatCreatedAt(createdAt);
 
         if ("LAB".equalsIgnoreCase(roomType)) {
             displayRoomType = "Phòng Lab";
@@ -64,55 +70,90 @@ public class Classroom {
                 .toList();
 
         List<DeviceDataMerged> merged = DataService.mergeDeviceData(dataInRoom);
-
         if (!merged.isEmpty()) {
-            DeviceDataMerged latest = merged.get(0); // Dòng mới nhất đã merge
-
+            DeviceDataMerged latest = merged.get(0);
             setTemperature(latest.getTemperature() != null ? latest.getTemperature() : 0);
             setHumidity(latest.getHumidity() != null ? latest.getHumidity() : 0);
             setLux(latest.getLux() != null ? latest.getLux() : 0);
             setCo2(latest.getCo2() != null ? latest.getCo2() : 0);
             setLastUpdated(latest.getCreatedAt());
-
-            System.out.println("↪ Merge OK cho " + name + ": T=" + getTemperature() + " H=" + getHumidity() + " C=" + getCo2() + " L=" + getLux());
         }
     }
 
-    // Property cho TableView
+    private void formatCreatedAt(String dateStr) {
+
+        if (dateStr == null || dateStr.isEmpty()) {
+            formattedCreatedAt.set("");
+            return;
+        }
+        try {
+            String formatted;
+            if (dateStr.contains("T")) {
+                LocalDate parsed = LocalDate.parse(dateStr.substring(0, 10)); // "2025-08-07"
+                formatted = parsed.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+
+                System.out.println(">> SET creationDate = " + formatted);
+            } else {
+                LocalDate local = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                formatted = local.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+
+                System.out.println(">> SET creationDate = " + formatted);
+            }
+            formattedCreatedAt.set(formatted);
+        } catch (Exception e) {
+            formattedCreatedAt.set(dateStr); // fallback
+        }
+
+
+    }
+
+    // =============== Properties cho TableView ===============
     public StringProperty idProperty() { return fxId; }
     public StringProperty roomNumberProperty() { return fxRoomNumber; }
     public StringProperty buildingProperty() { return fxBuilding; }
     public StringProperty floorProperty() { return fxFloor; }
     public IntegerProperty deviceCountProperty() { return fxDeviceCount; }
-    public StringProperty creationDateProperty() { return fxCreatedAt; }
     public StringProperty statusProperty() { return fxStatus; }
     public StringProperty roomTypeProperty() { return fxRoomType; }
     public StringProperty displayRoomTypeProperty() { return fxDisplayRoomType; }
-    private transient List<Device> devicesInRoom = new java.util.ArrayList<>();
+    public StringProperty formattedCreatedAtProperty() { return formattedCreatedAt; }
+    public StringProperty lastUpdatedProperty() { return lastUpdated; }
 
-    // Getter & Setter
-    public List<Device> getDevicesInRoom() {
-        return devicesInRoom != null ? devicesInRoom : List.of();
-    }
-
-
-    public void setDevicesInRoom(List<Device> devices) {
-        this.devicesInRoom = devices;
-    }// MỚI
-
-    public void setCreationDate(String date) {
-        this.createdAt = date;
-        this.fxCreatedAt.set(date);
-    }
-
-    // Getter thông thường
+    // =============== Getters / Setters ===============
+    public long getClassroomId() { return id; }
     public String getId() { return code; }
     public String getRoomNumber() { return name; }
     public String getStatus() { return status; }
     public String getRoomType() { return roomType; }
-    public String getDisplayRoomType() { return displayRoomType; } // MỚI
+    public String getDisplayRoomType() { return displayRoomType; }
 
-    // Sensor readings
+    public List<Device> getDevicesInRoom() { return devicesInRoom; }
+    public void setDevicesInRoom(List<Device> devices) { this.devicesInRoom = devices; }
+
+    public String getFormattedCreatedAt() { return formattedCreatedAt.get(); }
+
+    public String getCreationDate() { return createdAt; }
+
+    public void setCreationDate(String date) {
+        System.out.println(">> SET creationDate = " + date);
+        this.createdAt = date;
+        formatCreatedAt(date);
+    }
+
+    public void setStatus(String newStatus) {
+        this.status = newStatus;
+        this.fxStatus.set(newStatus);
+    }
+
+    public void setLastUpdated(String value) {
+        this.lastUpdated.set(value);
+    }
+
+    public String getLastUpdated() {
+        return lastUpdated.get();
+    }
+
+    // =============== Sensor ===============
     public double getTemperature() { return temperature.get(); }
     public double getHumidity() { return humidity.get(); }
     public double getLux() { return lux.get(); }
@@ -123,11 +164,6 @@ public class Classroom {
     public void setLux(double lux) { this.lux.set(lux); }
     public void setCo2(double co2) { this.co2.set(co2); }
 
-    public void setStatus(String newStatus) {
-        this.status = newStatus;
-        this.fxStatus.set(newStatus);
-    }
-
     public String getFormattedStatus() {
         return switch (status) {
             case "ACTIVE" -> "Hoạt động";
@@ -136,15 +172,13 @@ public class Classroom {
         };
     }
 
-    public String getLastUpdated() {
-        return lastUpdated.get();
+    public void setRoomType(String type) {
+        this.roomType = type;
+        this.fxRoomType.set(type); // đồng bộ luôn nếu cần
     }
 
-    public void setLastUpdated(String value) {
-        this.lastUpdated.set(value);
-    }
-
-    public StringProperty lastUpdatedProperty() {
-        return lastUpdated;
+    public void setRoomNumber(String roomNumber) {
+        this.name = roomNumber;
+        this.fxRoomNumber.set(roomNumber);
     }
 }

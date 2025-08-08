@@ -2,6 +2,7 @@ package com.example.sensorroom.controller;
 
 import com.example.sensorroom.dto.classroom.*;
 import com.example.sensorroom.entity.Classroom;
+import com.example.sensorroom.mapper.ClassroomMapper;
 import com.example.sensorroom.service.ClassroomService;
 
 import jakarta.validation.Valid;
@@ -31,8 +32,9 @@ public class ClassroomController {
 
     @PostMapping
     public ResponseEntity<Classroom> createClassroom(@Valid @RequestBody ClassroomRequest classroomRequest){
-        Classroom classroom = new Classroom();
-        classroom.setName(classroomRequest.getName());
+        //Classroom classroom = new Classroom();
+        //classroom.setName(classroomRequest.getName());
+        Classroom classroom = ClassroomMapper.toEntity(classroomRequest);
         return ResponseEntity.ok(classroomService.createClassroom(classroom));
     }
 

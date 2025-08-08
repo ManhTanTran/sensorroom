@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 public class ClassroomDetailView {
     private final Classroom classroom;
-    private TableView<DeviceDataMerged> measurementTable = new TableView<>();
+    private final TableView<DeviceDataMerged> measurementTable = new TableView<>();
     private javafx.animation.Timeline autoRefreshTimeline;
 
     public ClassroomDetailView(Classroom classroom) {

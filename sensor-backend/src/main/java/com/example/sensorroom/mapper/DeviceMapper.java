@@ -49,9 +49,7 @@ public class DeviceMapper {
         device.setDataCycle(request.getDataCycle());
         device.setNotes(request.getNotes());
 
-        if (classroom != null) {
-            device.setClassroom(classroom);
-        }
+        device.setClassroom(classroom);
     }
 
 }

@@ -125,13 +125,67 @@ public class ApiService {
                 .thenApply(body -> gson.fromJson(body, Classroom.class));
     }
 
+    public CompletableFuture<Void> deleteClassroom(long classroomId) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/classrooms/" + classroomId))
+                .DELETE()
+                .build();
+
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(response -> {
+                    if (response.statusCode() != 200 && response.statusCode() != 204) {
+                        throw new RuntimeException("Xóa phòng học thất bại: " + response.body());
+                    }
+                    return null;
+                });
+    }
+
+    public CompletableFuture<Void> updateClassroom(Classroom classroom) {
+        String url = BASE_URL + "/classrooms/" + classroom.getClassroomId();
+        Roomtype mappedEnum;
+        try {
+            mappedEnum = Roomtype.valueOf(classroom.getRoomType().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Roomtype không hợp lệ: " + classroom.getRoomType());
+        }
+
+        UpdateClassroomRequest dto = new UpdateClassroomRequest(
+                classroom.getRoomNumber(),
+                classroom.buildingProperty().get(),
+                classroom.floorProperty().get(),
+               mappedEnum
+        );
+
+        Gson gson = new Gson();
+        String requestBody = gson.toJson(dto);
+        System.out.println("JSON gửi lên: " + requestBody);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
+                .header("Content-Type", "application/json")
+                .build();
+
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    System.out.println("STATUS: " + response.statusCode());
+                    System.out.println("BODY: " + response.body());
+                    if (response.statusCode() != 200) {
+                        throw new RuntimeException("Cập nhật classroom thất bại: " + response.body());
+                    }
+                });
+    }
+
+
+
+
     /**
      * THAY ĐỔI: Sửa lại phương thức này để nhận deviceId kiểu long, khớp với backend
      */
-    public CompletableFuture<Void> updateDevice(long deviceId, UpdateDeviceRequest updateRequest) {
+    public CompletableFuture<Void> updateDevice(String deviceCode, UpdateDeviceRequest updateRequest) {
         String requestBody = gson.toJson(updateRequest);
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + "/devices/" + deviceId)) // URL giờ đây đúng
+                .uri(URI.create(BASE_URL + "/devices/code/" + deviceCode)) // URL giờ đây đúng
                 .header("Content-Type", "application/json")
                 .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();

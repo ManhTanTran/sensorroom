@@ -315,6 +315,15 @@ public class KtvSingleRoomDashboardView {
         xAxis.setLabel("Thời gian");
         NumberAxis yAxis = new NumberAxis();
         yAxis.setLabel("Số lần cảnh báo");
+        yAxis.setTickUnit(1);
+        yAxis.setMinorTickCount(0);
+        yAxis.setForceZeroInRange(true);
+        yAxis.setTickLabelFormatter(new NumberAxis.DefaultFormatter(yAxis) {
+            @Override
+            public String toString(Number object) {
+                return String.valueOf(object.intValue());
+            }
+        });
 
         BarChart<String, Number> barChart = new BarChart<>(xAxis, yAxis);
         barChart.setLegendVisible(false);
