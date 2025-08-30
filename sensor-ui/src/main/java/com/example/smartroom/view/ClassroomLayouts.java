@@ -162,8 +162,8 @@ public class ClassroomLayouts {
 
                     String type = device.getType();
                     boolean isExceeded = switch (type) {
-                        case "TEMPERATURE" -> numericValue > 30;
-                        case "HUMIDITY" -> numericValue > 70;
+                        case "TEMPERATURE" -> numericValue > 30 || numericValue < 18;
+                        case "HUMIDITY" -> numericValue > 70 || numericValue < 35;
                         case "LIGHT" -> numericValue > 1500;
                         case "CO2" -> numericValue > 1500;
                         default -> false;

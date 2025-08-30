@@ -35,7 +35,7 @@ public class DeviceController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/code/{deviceCode}")
+    @PutMapping("/{deviceCode}")
     public ResponseEntity<DeviceResponse> updateDeviceByDeviceCode(
             @PathVariable("deviceCode") String deviceCode,
             @Valid @RequestBody DeviceUpdateRequest request) {
